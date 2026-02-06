@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parqueo TORRE GRANADOS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="loginCard" class="login-wrapper">
+        <div class="card-center">
+            <img class="logo-large" src="logotorre.png" alt="Logo">
+            <h2 class="title-ios">Acceso al Sistema</h2>
+            <div class="input-container">
+                <div class="input-field">
+                    <label>Usuario</label>
+                    <input type="text" id="loginUser" placeholder="Usuario">
+                </div>
+                <div class="input-field">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPass" placeholder="••••••••">
+                </div>
+            </div>
+            <button class="ios-btn btn-large" onclick="login()">Entrar al Sistema</button>
+        </div>
+    </div>
+
+    <div id="appCard" class="app-container" style="display:none;">
+        
+        <div class="reloj-viva">
+            <div id="reloj">00:00:00</div>
+            <div id="fecha">-- de -- de ----</div>
+        </div>
+
+        <div class="header-logo-container">
+            <img class="logo-app-main" src="logotorre.png" alt="Logo">
+        </div>
+
+        <div class="card center-content">
+            <h2 class="title-ios-sub">INGRESAR VEHÍCULO</h2>
+            <input type="text" id="plateInput" class="input-plate" placeholder="PLACA">
+            <button class="ios-btn btn-large" style="margin-top: 20px;" onclick="registrarEntrada()">REGISTRAR ENTRADA</button>
+        </div>
+
+        <div class="card">
+            <h2 class="title-ios-green">Vehículos en Parqueo</h2>
+            <ul id="activeList"></ul>
+        </div>
+
+        <div class="card center-content">
+            <div class="button-row">
+                <button class="ios-btn-alt btn-med" onclick="toggleHistorial()">Ver Historial</button>
+                <button class="ios-btn-report btn-med" onclick="generarReporteHTML()">Reporte PDF</button>
+            </div>
+            <div id="historialBox" class="historial-container" style="display:none;"></div>
+        </div>
+
+        <div class="footer-user-fixed">
+            <div id="userDisplay"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
