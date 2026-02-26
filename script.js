@@ -176,7 +176,7 @@ function borrarHistorialTotal(){
     }
 }
 
-// --- IMPRESIÓN OPTIMIZADA EPSON TM-T20III ---
+// --- IMPRESIÓN AJUSTADA (TEXTOS SEGUROS PARA EPSON TM-T20III) ---
 
 function imprimirTicketEntrada(v){
     let w = window.open("","","width=300,height=900");
@@ -187,11 +187,11 @@ function imprimirTicketEntrada(v){
                 font-family: 'Arial', sans-serif; 
                 width: 260px; 
                 margin: 0; 
-                padding: 30px 10px 220px 10px; 
+                padding: 30px 5px 220px 5px; 
                 text-align: center;
                 min-height: 600px; 
             }
-            h1 { font-size: 65px; margin: 10px 0; font-weight: 900; }
+            h1 { font-size: 52px; margin: 15px 0; font-weight: 900; letter-spacing: -1px; }
             p { margin: 5px 0; }
         </style></head>
         <body onload="window.print();window.close()">
@@ -220,17 +220,17 @@ function imprimirTicketSalida(h){
                 font-family: 'Arial', sans-serif; 
                 width: 260px; 
                 margin: 0; 
-                padding: 30px 10px 140px 10px; /* Reducido de 220px a 140px */
+                padding: 30px 5px 140px 5px; 
                 text-align: center;
-                min-height: 450px; /* Reducido de 600px a 450px */
+                min-height: 450px;
             }
-            .precio-grande { font-size: 70px; font-weight: 900; margin: 15px 0; }
+            .precio-grande { font-size: 58px; font-weight: 900; margin: 15px 0; letter-spacing: -1px; }
             p { margin: 5px 0; }
         </style></head>
         <body onload="window.print();window.close()">
             <img src="logotorre.png" width="110">
             <hr style="border: 1px solid #000;">
-            <p style="font-size: 22px; font-weight: bold;">PLACA: ${h.placa}</p>
+            <p style="font-size: 24px; font-weight: bold;">PLACA: ${h.placa}</p>
             <div class="precio-grande">${visualPrecio}</div>
             <hr style="border: 1px solid #000;">
             <p style="font-size: 15px;">
@@ -238,7 +238,8 @@ function imprimirTicketSalida(h){
                 FECHA: ${h.fecha}
             </p>
             <p style="font-size: 14px; font-weight: bold; margin-top: 10px;">¡GRACIAS POR SU VISITA!</p>
-            <div style="margin-top: 100px; color: white;">.</div> </body></html>`);
+            <div style="margin-top: 100px; color: white;">.</div>
+        </body></html>`);
     w.document.close();
 }
 
