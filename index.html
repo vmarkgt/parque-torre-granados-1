@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEMA TORRE GRANADOS</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <div id="loginCard" class="login-wrapper">
+        <div class="card-center">
+            <img class="logo-large" src="logotorre.png" alt="Logo">
+            <h2 style="margin-bottom:20px;">Acceso al Sistema</h2>
+            <div class="input-field">
+                <label>Usuario</label>
+                <input type="text" id="loginUser" placeholder="Usuario">
+            </div>
+            <div class="input-field">
+                <label>Contraseña</label>
+                <input type="password" id="loginPass" placeholder="••••••••" onkeypress="if(event.key === 'Enter') login()">
+            </div>
+            <div style="text-align: left; margin: 10px 0 20px 5px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="rememberMe" style="width: 18px; height: 18px;"> 
+                <label for="rememberMe" style="font-size: 13px; color: #8e8e93; font-weight: 600;">Recordar usuario</label>
+            </div>
+            <button class="ios-btn btn-large" onclick="login()">ENTRAR</button>
+        </div>
+    </div>
+
+    <div id="appCard" class="app-container" style="display:none;">
+        <div class="reloj-viva">
+            <div id="reloj">00:00:00</div>
+            <div id="fecha">-- de -- de ----</div>
+        </div>
+
+        <div class="header-logo-container">
+            <img class="logo-app-main" src="logotorre.png" alt="Logo">
+        </div>
+
+        <div class="card center-content">
+            <div class="title-ios-sub">INGRESAR VEHÍCULO</div>
+            <input type="text" id="plateInput" class="input-plate" placeholder="PLACA" style="text-transform: uppercase;" onkeypress="if(event.key === 'Enter') registrarEntrada()">
+            <button class="ios-btn btn-large" style="margin-top: 20px;" onclick="registrarEntrada()">REGISTRAR ENTRADA</button>
+        </div>
+
+        <div class="card">
+            <h2 class="title-ios-green">VEHÍCULOS EN PARQUEO</h2>
+            <div id="activeList"></div>
+        </div>
+
+        <div class="card center-content">
+            <div class="button-row" style="margin-bottom: 12px;">
+                <button class="ios-btn-alt btn-med" onclick="cobrarBaño()" style="background:#5ac8fa;">Baño (Q3)</button>
+                <button class="ios-btn-alt btn-med" onclick="cobrarTicketPerdido()" style="background:#ffcc00; color:#000;">T. Perdido</button>
+                <button class="ios-btn-alt btn-med" onclick="abrirModalMensual()" style="background:#af52de;">Mensual</button>
+            </div>
+            <div class="button-row">
+                <button class="ios-btn-alt" style="background:#8e8e93;" onclick="toggleHistorial()">Historial</button>
+                <button class="ios-btn-report" onclick="generarReporteHTML()">Reporte Final</button>
+            </div>
+            <div id="historialBox" class="historial-container" style="display:none;"></div>
+        </div>
+
+        <div id="userFooter" class="footer-user-fixed">
+            <div id="userDisplay">👤 OPERADOR: ---</div>
+        </div>
+    </div>
+
+    <div id="modalMensual" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+        <div class="card" style="width:85%; max-width:350px;">
+            <h3 style="margin-top:0;">Cliente Mensual</h3>
+            <div class="input-field"><label>Nombre del Cliente</label><input type="text" id="mNombre"></div>
+            <div class="input-field"><label>Monto a Pagar Q</label><input type="number" id="mCosto"></div>
+            <button class="ios-btn" style="padding:15px; margin-bottom:10px;" onclick="guardarMensualidad()">Guardar Pago</button>
+            <button class="ios-btn-danger" onclick="cerrarModalMensual()">Cancelar</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
