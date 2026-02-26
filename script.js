@@ -200,7 +200,7 @@ function imprimirTicketSalida(h){
             <h2 style="margin:0;">${h.placa}</h2>
             <div class="total">${visualPrecio}</div>
             <p style="font-size: 12px;">E: ${h.horaE} | S: ${h.horaS}<br>FECHA: ${h.fecha}</p>
-            <hr><p style="font-size: 10px;">¡GRACIAS POR SU VISITA!</p>
+            
         </body></html>`);
     w.document.close();
 }
