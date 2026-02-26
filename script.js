@@ -17,7 +17,6 @@ let activos = JSON.parse(localStorage.getItem("activos")) || [];
 activos = activos.map(v => ({...v, horaEntrada: new Date(v.horaEntrada), sellos: v.sellos || 0}));
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
-// RELOJ
 setInterval(() => {
     const relojCont = document.getElementById('reloj');
     if(!relojCont) return;
@@ -26,7 +25,6 @@ setInterval(() => {
     document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }, 1000);
 
-// LOGIN
 function login(){
     const u = document.getElementById("loginUser").value.trim();
     const p = document.getElementById("loginPass").value.trim();
@@ -46,7 +44,6 @@ function login(){
     }
 }
 
-// ENTRADA
 function registrarEntrada(){
     let input = document.getElementById("plateInput");
     let placa = input.value.trim().toUpperCase();
@@ -59,13 +56,12 @@ function registrarEntrada(){
     actualizarLista();
 }
 
-// OTROS COBROS
 function cobrarTicketPerdido() {
     let placa = prompt("Ingrese la PLACA del vehículo:");
     if(!placa) return;
     historial.push({placa: "T. PERDIDO: " + placa.toUpperCase(), tipo: "TICKET PERDIDO", precio: 25, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user, valorSello: 0});
     localStorage.setItem("historial", JSON.stringify(historial));
-    alert("Cobro de Ticket Perdido registrado (Q25)");
+    alert("Cobro registrado (Q25)");
 }
 
 function cobrarBaño() {
@@ -87,7 +83,6 @@ function guardarMensualidad() {
     alert("Pago mensual guardado");
 }
 
-// GESTIÓN DE SALIDAS
 function agregarSello(index){
     activos[index].sellos += 1;
     let v = activos[index];
@@ -141,91 +136,92 @@ function actualizarLista(){
     });
 }
 
-// HISTORIAL Y CIERRE DE TURNO
 function toggleHistorial(){
     let box = document.getElementById("historialBox");
     if(box.style.display === "none") {
         box.style.display = "block";
         let html = historial.slice().reverse().map(h => `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><b>${h.placa}</b> - Q${h.precio} (${h.tipo})</div>`).join('');
-        
-        // LÓGICA DE BOTONES SEGÚN ROL
         if(usuarioActivo.rol === "ADMIN") {
             html += `<button class="ios-btn-danger" onclick="borrarHistorialTotal()">BORRAR TODO (ADMIN)</button>`;
         } else {
             html += `<button class="ios-btn-danger" style="background:#ff9500;" onclick="cerrarTurnoOperador()">CERRAR TURNO (BORRAR MI HISTORIAL)</button>`;
         }
-        
         box.innerHTML = html || "Sin movimientos en este turno";
     } else box.style.display = "none";
 }
 
 function cerrarTurnoOperador(){
-    if(confirm("¿Seguro que desea cerrar su turno? Esto borrará el historial actual para el siguiente operador.")){
+    if(confirm("¿Seguro que desea cerrar su turno?")){
         historial = [];
         localStorage.setItem("historial", JSON.stringify(historial));
         toggleHistorial();
-        alert("Turno cerrado. El historial está limpio.");
+        alert("Turno cerrado.");
     }
 }
 
 function borrarHistorialTotal(){
-    if(confirm("¿BORRAR TODO EL HISTORIAL DEL SISTEMA?")){
+    if(confirm("¿BORRAR TODO EL HISTORIAL?")){
         historial = [];
         localStorage.setItem("historial", JSON.stringify(historial));
         toggleHistorial();
     }
 }
 
-// TICKETS
+// IMPRESIÓN OPTIMIZADA PARA EPSON (ANCHO 80MM)
 function imprimirTicketEntrada(v){
     let w = window.open("","","width=300,height=450");
-    w.document.write(`<html><body onload="window.print();window.close()"><center style="font-family:sans-serif; padding:20px; border:1px solid #000;">
-        <img src="logotorre.png" width="100"><br>
-        <h1 style="font-size:45px; margin:10px 0;">${v.placa}</h1>
-        <p>ENTRADA: ${new Date().toLocaleTimeString()}</p>
-        <p style="font-size:10px;">30 MIN GRATIS POR SELLO</p>
-    </center></body></html>`);
+    w.document.write(`
+        <html><head><style>
+            @page { margin: 0; }
+            body { font-family: 'Arial', sans-serif; width: 280px; margin: 0; padding: 10px; text-align: center; }
+            h1 { font-size: 45px; margin: 10px 0; border: 2px solid #000; padding: 5px; }
+        </style></head>
+        <body onload="window.print();window.close()">
+            <img src="logotorre.png" width="120"><br>
+            <p>PARQUEO TORRE GRANADOS</p><hr>
+            <h1>${v.placa}</h1>
+            <p>ENTRADA: ${new Date().toLocaleTimeString()}<br>FECHA: ${new Date().toLocaleDateString()}</p>
+            <hr><p style="font-size: 11px;">30 MIN GRATIS POR SELLO</p>
+        </body></html>`);
     w.document.close();
 }
 
 function imprimirTicketSalida(h){
     let w = window.open("","","width=300,height=450");
     let visualPrecio = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00 (Q${h.valorSello}.00)`;
-    w.document.write(`<html><body onload="window.print();window.close()"><center style="font-family:sans-serif; padding:20px; border:1px solid #000;">
-        <img src="logotorre.png" width="100"><br>
-        <h1 style="font-size:40px; margin:10px 0;">${h.placa}</h1>
-        <div style="background:#000; color:#fff; padding:10px;"><h2>${visualPrecio}</h2></div>
-        <p style="font-size:12px; margin-top:10px;">E: ${h.horaE} | S: ${h.horaS}</p>
-    </center></body></html>`);
+    w.document.write(`
+        <html><head><style>
+            @page { margin: 0; }
+            body { font-family: 'Arial', sans-serif; width: 280px; margin: 0; padding: 10px; text-align: center; }
+            .total { background: #000; color: #fff; padding: 10px; font-size: 30px; margin: 10px 0; }
+        </style></head>
+        <body onload="window.print();window.close()">
+            <img src="logotorre.png" width="100"><hr>
+            <h2 style="margin:0;">${h.placa}</h2>
+            <div class="total">${visualPrecio}</div>
+            <p style="font-size: 12px;">E: ${h.horaE} | S: ${h.horaS}<br>FECHA: ${h.fecha}</p>
+            <hr><p style="font-size: 10px;">¡GRACIAS POR SU VISITA!</p>
+        </body></html>`);
     w.document.close();
 }
 
-// REPORTE A4
 function generarReporteHTML() {
-    let trabajador = prompt("Nombre del trabajador para el reporte:");
+    let trabajador = prompt("Nombre del trabajador:");
     if (!trabajador) return;
-
     let vehiculos = historial.filter(x => x.tipo === "EFECTIVO" || x.tipo === "SELLO TOTAL");
-    let otrosServicios = historial.filter(x => x.tipo === "BAÑO" || x.tipo === "TICKET PERDIDO" || x.tipo === "MENSUAL");
-    
+    let otros = historial.filter(x => x.tipo === "BAÑO" || x.tipo === "TICKET PERDIDO" || x.tipo === "MENSUAL");
     let totalCaja = historial.reduce((s, x) => s + x.precio, 0);
     let totalSoloVehiculos = vehiculos.reduce((s, x) => s + x.precio, 0);
-    let totalOtros = otrosServicios.reduce((s, x) => s + x.precio, 0);
+    let totalOtros = otros.reduce((s, x) => s + x.precio, 0);
     let totalSellos = historial.reduce((s, x) => s + (x.valorSello || 0), 0);
 
     let reportContainer = document.createElement("div");
-    reportContainer.style.position = "fixed"; 
-    reportContainer.style.left = "-9999px";
-    reportContainer.style.width = "595px"; 
-    reportContainer.style.background = "white"; 
-    reportContainer.style.padding = "40px";
+    reportContainer.style.position = "fixed"; reportContainer.style.left = "-9999px";
+    reportContainer.style.width = "595px"; reportContainer.style.background = "white"; reportContainer.style.padding = "40px";
 
     reportContainer.innerHTML = `
         <div style="border: 1px solid #000; padding: 30px; min-height: 800px; font-family: Arial;">
-            <center>
-                <img src="logotorre.png" width="180">
-                <h1>REPORTE DE TURNO</h1>
-            </center>
+            <center><img src="logotorre.png" width="180"><h1>REPORTE DE TURNO</h1></center>
             <div style="display:flex; justify-content:space-between; margin-top:30px;">
                 <span><b>OPERADOR:</b> ${trabajador.toUpperCase()}</span>
                 <span><b>FECHA:</b> ${new Date().toLocaleDateString()}</span>
@@ -236,14 +232,7 @@ function generarReporteHTML() {
                 <tr style="border-bottom:2px solid #000; text-align:left;"><th>Placa</th><th>Tipo</th><th style="text-align:right;">Monto</th></tr>
                 ${vehiculos.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td>${x.tipo}</td><td style="text-align:right;">${x.precio > 0 ? 'Q'+x.precio+'.00' : 'Q0.00 (Q'+x.valorSello+')'}</td></tr>`).join('')}
             </table>
-
-            ${otrosServicios.length > 0 ? `
-                <h3 style="margin-top:20px;">OTROS SERVICIOS</h3>
-                <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                    ${otrosServicios.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td style="text-align:right;">Q${x.precio}.00</td></tr>`).join('')}
-                </table>
-            ` : ''}
-
+            ${otros.length > 0 ? `<h3 style="margin-top:20px;">OTROS SERVICIOS</h3><table style="width:100%; font-size:12px; border-collapse:collapse;">${otros.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td style="text-align:right;">Q${x.precio}.00</td></tr>`).join('')}</table>` : ''}
             <div style="margin-top:40px; border:2px solid #000; padding:20px; background:#f9f9f9;">
                 <table style="width:100%; font-size:18px;">
                     <tr><td>Total Vehículos:</td><td style="text-align:right;">Q${totalSoloVehiculos}.00</td></tr>
