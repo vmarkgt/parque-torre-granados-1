@@ -167,40 +167,66 @@ function borrarHistorialTotal(){
     }
 }
 
-// IMPRESIÓN OPTIMIZADA PARA EPSON (ANCHO 80MM)
+// IMPRESIÓN CORREGIDA PARA EPSON (MÁRGENES AMPLIOS Y TEXTO NEGRO)
 function imprimirTicketEntrada(v){
-    let w = window.open("","","width=300,height=450");
+    let w = window.open("","","width=300,height=600");
     w.document.write(`
         <html><head><style>
             @page { margin: 0; }
-            body { font-family: 'Arial', sans-serif; width: 280px; margin: 0; padding: 10px; text-align: center; }
-            h1 { font-size: 45px; margin: 10px 0; border: 2px solid #000; padding: 5px; }
+            body { 
+                font-family: 'Arial', sans-serif; 
+                width: 280px; 
+                margin: 0; 
+                padding: 80px 10px; /* ESPACIO GRANDE ARRIBA Y ABAJO */
+                text-align: center; 
+            }
+            h1 { font-size: 50px; margin: 15px 0; border: 4px solid #000; padding: 10px; display: inline-block; width: 80%; }
         </style></head>
         <body onload="window.print();window.close()">
-            <img src="logotorre.png" width="120"><br>
-            <p>PARQUEO TORRE GRANADOS</p><hr>
+            <img src="logotorre.png" width="140"><br>
+            <p style="font-size: 16px; font-weight: bold; margin: 5px 0;">PARQUEO TORRE GRANADOS</p>
+            <hr style="border: 1px solid #000;">
             <h1>${v.placa}</h1>
-            <p>ENTRADA: ${new Date().toLocaleTimeString()}<br>FECHA: ${new Date().toLocaleDateString()}</p>
-            <hr><p style="font-size: 11px;">30 MIN GRATIS POR SELLO</p>
+            <p style="font-size: 14px;">ENTRADA: ${new Date().toLocaleTimeString()}<br>FECHA: ${new Date().toLocaleDateString()}</p>
+            <hr style="border: 1px solid #000;">
+            <p style="font-size: 12px; font-weight: bold;">30 MIN GRATIS POR SELLO</p>
         </body></html>`);
     w.document.close();
 }
 
 function imprimirTicketSalida(h){
-    let w = window.open("","","width=300,height=450");
-    let visualPrecio = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00 (Q${h.valorSello}.00)`;
+    let w = window.open("","","width=300,height=600");
+    let visualPrecio = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00`;
     w.document.write(`
         <html><head><style>
             @page { margin: 0; }
-            body { font-family: 'Arial', sans-serif; width: 280px; margin: 0; padding: 10px; text-align: center; }
-            .total { background: #000; color: #fff; padding: 10px; font-size: 30px; margin: 10px 0; }
+            body { 
+                font-family: 'Arial', sans-serif; 
+                width: 280px; 
+                margin: 0; 
+                padding: 80px 10px; /* ESPACIO GRANDE ARRIBA Y ABAJO */
+                text-align: center; 
+            }
+            .total-box { 
+                border: 4px solid #000; /* BORDE NEGRO GRUESO */
+                color: #000; 
+                padding: 15px; 
+                font-size: 45px; 
+                font-weight: 900; 
+                margin: 20px 0; 
+            }
         </style></head>
         <body onload="window.print();window.close()">
-            <img src="logotorre.png" width="100"><hr>
-            <h2 style="margin:0;">${h.placa}</h2>
-            <div class="total">${visualPrecio}</div>
-            <p style="font-size: 12px;">E: ${h.horaE} | S: ${h.horaS}<br>FECHA: ${h.fecha}</p>
-            
+            <img src="logotorre.png" width="120">
+            <hr style="border: 1px solid #000;">
+            <h2 style="margin:0; font-size: 24px;">PLACA: ${h.placa}</h2>
+            <div class="total-box">${visualPrecio}</div>
+            <p style="font-size: 14px; font-weight: bold;">
+                E: ${h.horaE} | S: ${h.horaS}<br>
+                FECHA: ${h.fecha}
+            </p>
+            <hr style="border: 1px solid #000;">
+            <p style="font-size: 12px; font-weight: bold;">¡GRACIAS POR SU VISITA!</p>
         </body></html>`);
     w.document.close();
 }
