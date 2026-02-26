@@ -17,6 +17,7 @@ let activos = JSON.parse(localStorage.getItem("activos")) || [];
 activos = activos.map(v => ({...v, horaEntrada: new Date(v.horaEntrada), sellos: v.sellos || 0}));
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
+// RELOJ Y FECHA
 setInterval(() => {
     const relojCont = document.getElementById('reloj');
     if(!relojCont) return;
@@ -25,6 +26,7 @@ setInterval(() => {
     document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }, 1000);
 
+// LOGIN
 function login(){
     const u = document.getElementById("loginUser").value.trim();
     const p = document.getElementById("loginPass").value.trim();
@@ -44,6 +46,7 @@ function login(){
     }
 }
 
+// REGISTRO DE ENTRADA
 function registrarEntrada(){
     let input = document.getElementById("plateInput");
     let placa = input.value.trim().toUpperCase();
@@ -56,6 +59,7 @@ function registrarEntrada(){
     actualizarLista();
 }
 
+// OTROS SERVICIOS
 function cobrarTicketPerdido() {
     let placa = prompt("Ingrese la PLACA del vehículo:");
     if(!placa) return;
@@ -83,6 +87,7 @@ function guardarMensualidad() {
     alert("Pago mensual guardado");
 }
 
+// GESTIÓN DE SALIDAS
 function agregarSello(index){
     activos[index].sellos += 1;
     let v = activos[index];
@@ -136,6 +141,7 @@ function actualizarLista(){
     });
 }
 
+// HISTORIAL Y CIERRE DE TURNO
 function toggleHistorial(){
     let box = document.getElementById("historialBox");
     if(box.style.display === "none") {
@@ -167,70 +173,82 @@ function borrarHistorialTotal(){
     }
 }
 
-// IMPRESIÓN CORREGIDA PARA EPSON (MÁRGENES AMPLIOS Y TEXTO NEGRO)
+// IMPRESIÓN OPTIMIZADA EPSON TM-T20III (MÁRGENES EXTREMOS)
 function imprimirTicketEntrada(v){
-    let w = window.open("","","width=300,height=600");
+    let w = window.open("","","width=300,height=900");
     w.document.write(`
         <html><head><style>
             @page { margin: 0; }
             body { 
                 font-family: 'Arial', sans-serif; 
-                width: 280px; 
+                width: 270px; 
                 margin: 0; 
-                padding: 80px 10px; /* ESPACIO GRANDE ARRIBA Y ABAJO */
-                text-align: center; 
+                padding: 120px 5px 160px 5px; 
+                text-align: center;
+                min-height: 550px;
             }
-            h1 { font-size: 50px; margin: 15px 0; border: 4px solid #000; padding: 10px; display: inline-block; width: 80%; }
+            .border-box { border: 5px solid #000; padding: 10px; display: block; margin: 15px auto; width: 85%; }
+            h1 { font-size: 55px; margin: 0; font-weight: 900; }
         </style></head>
         <body onload="window.print();window.close()">
             <img src="logotorre.png" width="140"><br>
-            <p style="font-size: 16px; font-weight: bold; margin: 5px 0;">PARQUEO TORRE GRANADOS</p>
+            <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">TORRE GRANADOS</p>
             <hr style="border: 1px solid #000;">
-            <h1>${v.placa}</h1>
-            <p style="font-size: 14px;">ENTRADA: ${new Date().toLocaleTimeString()}<br>FECHA: ${new Date().toLocaleDateString()}</p>
+            <div class="border-box">
+                <h1>${v.placa}</h1>
+            </div>
+            <p style="font-size: 16px; margin: 10px 0;">
+                <b>ENTRADA:</b> ${new Date().toLocaleTimeString()}<br>
+                <b>FECHA:</b> ${new Date().toLocaleDateString()}
+            </p>
             <hr style="border: 1px solid #000;">
-            <p style="font-size: 12px; font-weight: bold;">30 MIN GRATIS POR SELLO</p>
+            <p style="font-size: 14px; font-weight: bold;">30 MIN GRATIS POR SELLO</p>
+            <div style="height: 100px;"></div>
         </body></html>`);
     w.document.close();
 }
 
 function imprimirTicketSalida(h){
-    let w = window.open("","","width=300,height=600");
+    let w = window.open("","","width=300,height=900");
     let visualPrecio = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00`;
     w.document.write(`
         <html><head><style>
             @page { margin: 0; }
             body { 
                 font-family: 'Arial', sans-serif; 
-                width: 280px; 
+                width: 270px; 
                 margin: 0; 
-                padding: 80px 10px; /* ESPACIO GRANDE ARRIBA Y ABAJO */
-                text-align: center; 
+                padding: 120px 5px 160px 5px; 
+                text-align: center;
+                min-height: 550px;
             }
             .total-box { 
-                border: 4px solid #000; /* BORDE NEGRO GRUESO */
+                border: 6px solid #000; 
                 color: #000; 
                 padding: 15px; 
-                font-size: 45px; 
+                font-size: 52px; 
                 font-weight: 900; 
-                margin: 20px 0; 
+                margin: 20px auto;
+                width: 85%;
             }
         </style></head>
         <body onload="window.print();window.close()">
             <img src="logotorre.png" width="120">
             <hr style="border: 1px solid #000;">
-            <h2 style="margin:0; font-size: 24px;">PLACA: ${h.placa}</h2>
+            <h2 style="margin:5px 0; font-size: 26px;">PLACA: ${h.placa}</h2>
             <div class="total-box">${visualPrecio}</div>
-            <p style="font-size: 14px; font-weight: bold;">
+            <p style="font-size: 16px; font-weight: bold;">
                 E: ${h.horaE} | S: ${h.horaS}<br>
                 FECHA: ${h.fecha}
             </p>
             <hr style="border: 1px solid #000;">
-            <p style="font-size: 12px; font-weight: bold;">¡GRACIAS POR SU VISITA!</p>
+            <p style="font-size: 14px; font-weight: bold;">¡GRACIAS POR SU VISITA!</p>
+            <div style="height: 100px;"></div>
         </body></html>`);
     w.document.close();
 }
 
+// REPORTE FINAL A IMAGEN
 function generarReporteHTML() {
     let trabajador = prompt("Nombre del trabajador:");
     if (!trabajador) return;
