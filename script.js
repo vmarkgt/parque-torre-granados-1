@@ -176,7 +176,7 @@ function borrarHistorialTotal(){
     }
 }
 
-// --- IMPRESIÓN OPTIMIZADA SIN RECTÁNGULOS Y MENOS ESPACIO SUPERIOR ---
+// --- IMPRESIÓN OPTIMIZADA EPSON TM-T20III ---
 
 function imprimirTicketEntrada(v){
     let w = window.open("","","width=300,height=900");
@@ -187,7 +187,7 @@ function imprimirTicketEntrada(v){
                 font-family: 'Arial', sans-serif; 
                 width: 260px; 
                 margin: 0; 
-                padding: 30px 10px 220px 10px; /* Menos espacio arriba, mantenemos abajo */
+                padding: 30px 10px 220px 10px; 
                 text-align: center;
                 min-height: 600px; 
             }
@@ -211,7 +211,7 @@ function imprimirTicketEntrada(v){
 }
 
 function imprimirTicketSalida(h){
-    let w = window.open("","","width=300,height=900");
+    let w = window.open("","","width=300,height=800");
     let visualPrecio = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00`;
     w.document.write(`
         <html><head><style>
@@ -220,9 +220,9 @@ function imprimirTicketSalida(h){
                 font-family: 'Arial', sans-serif; 
                 width: 260px; 
                 margin: 0; 
-                padding: 30px 10px 220px 10px; 
+                padding: 30px 10px 140px 10px; /* Reducido de 220px a 140px */
                 text-align: center;
-                min-height: 600px;
+                min-height: 450px; /* Reducido de 600px a 450px */
             }
             .precio-grande { font-size: 70px; font-weight: 900; margin: 15px 0; }
             p { margin: 5px 0; }
@@ -238,8 +238,7 @@ function imprimirTicketSalida(h){
                 FECHA: ${h.fecha}
             </p>
             <p style="font-size: 14px; font-weight: bold; margin-top: 10px;">¡GRACIAS POR SU VISITA!</p>
-            <div style="margin-top: 180px; color: white;">.</div>
-        </body></html>`);
+            <div style="margin-top: 100px; color: white;">.</div> </body></html>`);
     w.document.close();
 }
 
