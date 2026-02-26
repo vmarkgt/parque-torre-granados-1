@@ -29,6 +29,7 @@ body, html { height: 100%; margin: 0; font-family: -apple-system, BlinkMacSystem
 .ios-btn { background: #007aff; color: white; border: none; font-weight: 700; border-radius: 15px; cursor: pointer; }
 .btn-large { width: 100%; padding: 20px; font-size: 18px; }
 .button-row { display: flex; gap: 10px; justify-content: center; }
+.btn-med { font-size: 13px; padding: 12px 5px; }
 .ios-btn-alt { background: #5856d6; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; cursor: pointer; flex: 1; }
 .ios-btn-report { background: #34c759; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; cursor: pointer; flex: 1; }
 .ios-btn-danger { background: #ff3b30; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; }
@@ -42,3 +43,6 @@ body, html { height: 100%; margin: 0; font-family: -apple-system, BlinkMacSystem
 /* FOOTER OPERADOR */
 .footer-user-fixed { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; border-top: 1px solid #ddd; padding: 15px 0; text-align: center; font-weight: 800; color: #1c1c1e; font-size: 14px; z-index: 100; }
 .historial-container { max-height: 300px; overflow-y: auto; margin-top: 15px; border: 1px solid #efeff4; border-radius: 15px; background: #fbfbfd; padding: 10px; }
+
+/* MODAL */
+.modal-simple { display: none; }
