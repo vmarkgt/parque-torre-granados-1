@@ -1,48 +1,222 @@
-body, html { height: 100%; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f2f2f7; }
+const usuariosSistemas = [
+    {user: "admin", pass: "admin2026", rol: "ADMIN"},
+    {user: "torregranados", pass: "torre2026", rol: "OPERADOR"}
+];
 
-/* LOGIN */
-.login-wrapper { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100%; }
-.card-center { background: #fff; padding: 40px; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 380px; }
-.logo-large { width: 100%; max-width: 280px; margin-bottom: 25px; }
-.input-field { margin-bottom: 15px; text-align: left; }
-.input-field label { display: block; font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase; margin-left: 5px; }
-.input-field input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #d1d1d6; margin-top: 5px; box-sizing: border-box; font-size: 16px; background: #f9f9fb; }
+let usuarioActivo = null;
 
-/* RELOJ */
-.reloj-viva { text-align: center; padding: 15px; background: #fff; border-bottom: 1px solid #ddd; }
-#reloj { font-size: 45px; font-weight: 900; letter-spacing: -1px; margin: 0; }
-#fecha { font-size: 14px; color: #8e8e93; font-weight: 600; }
+window.onload = () => {
+    const savedUser = localStorage.getItem("rememberedUser");
+    if(savedUser) {
+        document.getElementById("loginUser").value = savedUser;
+        document.getElementById("rememberMe").checked = true;
+    }
+};
 
-/* APP LAYOUT */
-.app-container { max-width: 550px; margin: 0 auto; padding-bottom: 100px; }
-.header-logo-container { text-align: center; padding: 20px 0; }
-.logo-app-main { width: 260px; }
-.card { background: #fff; padding: 25px; border-radius: 24px; margin: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-.center-content { text-align: center; }
+let activos = JSON.parse(localStorage.getItem("activos")) || [];
+activos = activos.map(v => ({...v, horaEntrada: new Date(v.horaEntrada), sellos: v.sellos || 0}));
+let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
-/* PLACA */
-.input-plate { text-align: center; font-size: 35px !important; font-weight: 800; border: 2px solid #efeff4; border-radius: 15px; width: 100%; padding: 15px; box-sizing: border-box; outline: none; color: #1c1c1e; }
-.title-ios-sub { color: #8e8e93; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-.title-ios-green { color: #28a745; text-align: center; font-size: 20px; margin-top: 0; }
+setInterval(() => {
+    const relojCont = document.getElementById('reloj');
+    if(!relojCont) return;
+    const ahora = new Date();
+    relojCont.innerText = ahora.toLocaleTimeString();
+    document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}, 1000);
 
-/* BOTONES */
-.ios-btn { background: #007aff; color: white; border: none; font-weight: 700; border-radius: 15px; cursor: pointer; }
-.btn-large { width: 100%; padding: 20px; font-size: 18px; }
-.button-row { display: flex; gap: 10px; justify-content: center; }
-.btn-med { font-size: 13px; padding: 12px 5px; }
-.ios-btn-alt { background: #5856d6; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; cursor: pointer; flex: 1; }
-.ios-btn-report { background: #34c759; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; cursor: pointer; flex: 1; }
-.ios-btn-danger { background: #ff3b30; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; }
+function login(){
+    let u = document.getElementById("loginUser").value;
+    let p = document.getElementById("loginPass").value;
+    let rem = document.getElementById("rememberMe").checked;
+    let encontrado = usuariosSistemas.find(x => x.user === u && x.pass === p);
+    if(!encontrado) return alert("Usuario o contraseña incorrectos");
+    if(rem) localStorage.setItem("rememberedUser", u);
+    else localStorage.removeItem("rememberedUser");
+    usuarioActivo = encontrado;
+    document.getElementById("loginCard").style.display = "none";
+    document.getElementById("appCard").style.display = "block";
+    document.getElementById("userDisplay").innerHTML = `👤 ${usuarioActivo.rol}: ${usuarioActivo.user.toUpperCase()}`;
+    actualizarLista();
+}
 
-/* LISTA ACTIVOS */
-.vehiculo-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #f2f2f7; }
-.placa-badge { background: #000; color: #fff; padding: 8px 12px; border-radius: 8px; font-weight: 800; font-size: 16px; }
-.btn-sello { background: #ff9500; color: white; border: none; padding: 10px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; }
-.btn-salida-list { background: #ff3b30; color: white; border: none; padding: 10px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+function registrarEntrada(){
+    let input = document.getElementById("plateInput");
+    // Forzamos mayúsculas al guardar
+    let placa = input.value.trim().toUpperCase();
+    if(!placa) return;
+    let v = {placa, horaEntrada: new Date(), user: usuarioActivo.user, sellos: 0};
+    activos.push(v);
+    localStorage.setItem("activos", JSON.stringify(activos));
+    imprimirTicketEntrada(v);
+    input.value = "";
+    actualizarLista();
+}
 
-/* FOOTER OPERADOR */
-.footer-user-fixed { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; border-top: 1px solid #ddd; padding: 15px 0; text-align: center; font-weight: 800; color: #1c1c1e; font-size: 14px; z-index: 100; }
-.historial-container { max-height: 300px; overflow-y: auto; margin-top: 15px; border: 1px solid #efeff4; border-radius: 15px; background: #fbfbfd; padding: 10px; }
+function cobrarTicketPerdido() {
+    let placa = prompt("Ingrese la PLACA del vehículo:");
+    if(!placa) return;
+    let registro = {
+        placa: placa.toUpperCase(),
+        tipo: "TICKET PERDIDO",
+        precio: 25,
+        fecha: new Date().toLocaleDateString(),
+        horaS: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+        operador: usuarioActivo.user
+    };
+    historial.push(registro);
+    localStorage.setItem("historial", JSON.stringify(historial));
+    alert("Ticket perdido registrado en historial (Q25)");
+}
 
-/* MODAL */
-.modal-simple { display: none; }
+function cobrarBaño() {
+    historial.push({placa: "BAÑO", tipo: "BAÑO", precio: 3, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user});
+    localStorage.setItem("historial", JSON.stringify(historial));
+    alert("Baño registrado (Q3)");
+}
+
+function abrirModalMensual() { document.getElementById("modalMensual").style.display = "flex"; }
+function cerrarModalMensual() { document.getElementById("modalMensual").style.display = "none"; }
+
+function guardarMensualidad() {
+    const nombre = document.getElementById("mNombre").value;
+    const mes = document.getElementById("mMes").value;
+    const costo = parseFloat(document.getElementById("mCosto").value);
+    if(!nombre || !costo) return alert("Faltan datos");
+    historial.push({placa: `MENSUAL: ${nombre.toUpperCase()} (${mes})`, tipo: "MENSUAL", precio: costo, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user});
+    localStorage.setItem("historial", JSON.stringify(historial));
+    cerrarModalMensual();
+    alert("Mensualidad guardada");
+}
+
+function agregarSello(index){
+    activos[index].sellos += 1;
+    let v = activos[index];
+    let min = Math.ceil((new Date() - v.horaEntrada) / 60000);
+    if((v.sellos * 30) >= min) darSalida(index);
+    else { localStorage.setItem("activos", JSON.stringify(activos)); actualizarLista(); }
+}
+
+function darSalida(index){
+    let v = activos[index];
+    let salida = new Date();
+    let minTotales = Math.ceil((salida - v.horaEntrada) / 60000);
+    let minFinales = Math.max(0, minTotales - (v.sellos * 30));
+    let inicial = v.placa[0];
+    let precio = 0;
+    let valSelloTotal = Math.ceil(minTotales / 30) * (inicial === "M" ? 3 : 5);
+    if(minFinales > 0) precio = Math.ceil(minFinales / 30) * (inicial === "M" ? 3 : 5);
+
+    let registro = {
+        placa: v.placa,
+        tipo: (minFinales === 0 && v.sellos > 0) ? "SELLO TOTAL" : "EFECTIVO",
+        horaE: v.horaEntrada.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+        horaS: salida.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+        fecha: salida.toLocaleDateString(),
+        sellos: v.sellos,
+        valorSello: (v.sellos > 0) ? valSelloTotal - precio : 0,
+        precio: precio,
+        operador: usuarioActivo.user
+    };
+
+    historial.push(registro);
+    imprimirTicketSalida(registro);
+    activos.splice(index, 1);
+    localStorage.setItem("activos", JSON.stringify(activos));
+    localStorage.setItem("historial", JSON.stringify(historial));
+    actualizarLista();
+}
+
+function actualizarLista(){
+    let cont = document.getElementById("activeList");
+    cont.innerHTML = "";
+    activos.forEach((v, i) => {
+        let li = document.createElement("li"); li.className = "vehiculo-item";
+        li.innerHTML = `<div class="placa-badge">${v.placa}</div><div class="action-btns">
+            <button class="btn-sello" onclick="agregarSello(${i})">SELLO (${v.sellos})</button>
+            <button class="btn-salida-list" onclick="darSalida(${i})">SALIDA</button></div>`;
+        cont.appendChild(li);
+    });
+}
+
+function toggleHistorial(){
+    let box = document.getElementById("historialBox");
+    if(box.style.display === "none") {
+        box.style.display = "block";
+        let html = historial.slice().reverse().map(h => `<div style="padding:8px; border-bottom:1px solid #eee; font-size:11px;"><b>${h.placa}</b> | Q${h.precio} | ${h.tipo || 'EFECTIVO'}</div>`).join('');
+        if(usuarioActivo.rol === "ADMIN") html += `<button class="ios-btn-danger" onclick="borrarHistorialDefinitivo()">BORRAR PERMANENTE</button>`;
+        else html += `<button class="ios-btn-danger" style="background:#ff9500" onclick="borrarTurno()">BORRAR TURNO</button>`;
+        box.innerHTML = html || "Vacío";
+    } else box.style.display = "none";
+}
+
+function borrarTurno(){ if(confirm("¿Cerrar turno?")){ historial = []; localStorage.setItem("historial", JSON.stringify(historial)); toggleHistorial(); } }
+function borrarHistorialDefinitivo(){ if(confirm("¿BORRAR TODO?")){ historial = []; localStorage.setItem("historial", JSON.stringify(historial)); toggleHistorial(); } }
+
+function imprimirTicketEntrada(v){
+    let w = window.open("","","width=300,height=500");
+    w.document.write(`<html><body onload="window.print();window.close()"><center style="font-family:sans-serif; padding:10px; width:220px; border:1px solid #000;">
+        <img src="logotorre.png" width="120"><br><hr>
+        <p style="margin:5px 0; font-size:12px;">TICKET DE ENTRADA</p>
+        <h1 style="font-size:45px; margin:5px 0;">${v.placa}</h1>
+        <p style="font-size:12px;">FECHA: ${new Date().toLocaleDateString()}<br>HORA: ${new Date().toLocaleTimeString()}</p><hr>
+        <p style="font-size:10px; font-weight:bold;">30 MINUTOS GRATIS EN SELLO<br>SE COBRARÁ Q25 POR TICKET PERDIDO</p>
+        <p style="font-size:9px;">No olvide dejar bien cerrado su vehículo o motocicleta.</p>
+    </center></body></html>`);
+    w.document.close();
+}
+
+function imprimirTicketSalida(h){
+    let w = window.open("","","width=300,height=500");
+    let pTxt = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00 <br><small style="font-size:10px;">(Cubierto por Sello)</small>`;
+    w.document.write(`<html><body onload="window.print();window.close()"><center style="font-family:sans-serif; padding:10px; width:220px; border:1px solid #000;">
+        <img src="logotorre.png" width="120"><br><hr>
+        <p style="margin:5px 0; font-size:12px;">TICKET DE SALIDA</p>
+        <h1 style="font-size:40px; margin:5px 0;">${h.placa}</h1>
+        <div style="background:#000; color:#fff; padding:10px; margin:10px 0;"><h1 style="margin:0; font-size:30px;">${pTxt}</h1></div>
+        <p style="font-size:11px;">E: ${h.horaE || '--'} | S: ${h.horaS || '--'}</p><hr>
+        <p style="font-size:10px;">¡Gracias por su visita!</p>
+    </center></body></html>`);
+    w.document.close();
+}
+
+function generarReporteHTML(){
+    let trabajador = prompt("Nombre del trabajador:");
+    if(!trabajador) return;
+    
+    let vehiculos = historial.filter(x => x.tipo === "EFECTIVO" || x.tipo === "SELLO TOTAL");
+    let banos = historial.filter(x => x.tipo === "BAÑO");
+    let mensuales = historial.filter(x => x.tipo === "MENSUAL");
+    let perdidos = historial.filter(x => x.tipo === "TICKET PERDIDO");
+    let totalCaja = historial.reduce((s,x)=>s+x.precio,0);
+    let totalSellos = historial.reduce((s,x)=>s+(x.valorSello || 0),0);
+
+    let v = window.open("", "_blank");
+    v.document.write(`<html><body style="font-family:sans-serif; padding:20px; color:#333;">
+        <div style="max-width:500px; margin:auto; border:1px solid #ccc; padding:20px; border-radius:10px;">
+            <center><img src="logotorre.png" width="140">
+            <h2 style="margin:10px 0;">REPORTE DE TURNO</h2>
+            <p style="font-size:14px;"><b>Operador:</b> ${trabajador.toUpperCase()} | <b>Fecha:</b> ${new Date().toLocaleDateString()}</p></center>
+            <hr>
+            <h4 style="margin-bottom:5px;">VEHÍCULOS</h4>
+            <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:10px;">
+                <tr style="background:#f2f2f2; text-align:left;"><th style="padding:5px;">Placa</th><th>Tipo</th><th>Monto</th></tr>
+                ${vehiculos.map(x=>`<tr><td style="padding:4px; border-bottom:1px solid #eee;">${x.placa}</td><td style="border-bottom:1px solid #eee;">${x.tipo}</td><td style="border-bottom:1px solid #eee;">Q${x.precio}</td></tr>`).join('')}
+            </table>
+            <h4 style="margin-bottom:5px;">SERVICIOS Y OTROS</h4>
+            <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                ${banos.map(x=>`<tr><td style="padding:4px; border-bottom:1px solid #eee;">Uso de Baño</td><td style="text-align:right; border-bottom:1px solid #eee;">Q${x.precio}</td></tr>`).join('')}
+                ${mensuales.map(x=>`<tr><td style="padding:4px; border-bottom:1px solid #eee;">${x.placa}</td><td style="text-align:right; border-bottom:1px solid #eee;">Q${x.precio}</td></tr>`).join('')}
+                ${perdidos.map(x=>`<tr><td style="padding:4px; border-bottom:1px solid #eee;">T. Perdido: ${x.placa}</td><td style="text-align:right; border-bottom:1px solid #eee;">Q${x.precio}</td></tr>`).join('')}
+            </table>
+            <div style="background:#e8f5e9; padding:15px; border-radius:8px; margin-top:20px;">
+                <table style="width:100%;">
+                    <tr><td><b>TOTAL EN CAJA:</b></td><td style="text-align:right;"><b>Q${totalCaja}.00</b></td></tr>
+                    <tr style="color:#666; font-size:13px;"><td>Pendiente Sellos:</td><td style="text-align:right;">Q${totalSellos}.00</td></tr>
+                </table>
+            </div>
+        </div>
+    </body></html>`);
+    v.document.close();
+    v.print();
+}
