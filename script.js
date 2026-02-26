@@ -1,4 +1,3 @@
-// CONFIGURACIÓN DE USUARIOS
 const usuariosSistemas = [
     {user: "admin", pass: "admin2026", rol: "ADMIN"},
     {user: "torregranados", pass: "torre2026", rol: "OPERADOR"}
@@ -6,7 +5,6 @@ const usuariosSistemas = [
 
 let usuarioActivo = null;
 
-// PERSISTENCIA Y CARGA
 window.onload = () => {
     const savedUser = localStorage.getItem("rememberedUser");
     if(savedUser) {
@@ -61,7 +59,7 @@ function registrarEntrada(){
     actualizarLista();
 }
 
-// COBROS EXTRAS
+// OTROS COBROS
 function cobrarTicketPerdido() {
     let placa = prompt("Ingrese la PLACA del vehículo:");
     if(!placa) return;
@@ -89,7 +87,7 @@ function guardarMensualidad() {
     alert("Pago mensual guardado");
 }
 
-// SELLOS Y SALIDA
+// GESTIÓN DE SALIDAS
 function agregarSello(index){
     activos[index].sellos += 1;
     let v = activos[index];
@@ -143,17 +141,40 @@ function actualizarLista(){
     });
 }
 
+// HISTORIAL Y CIERRE DE TURNO
 function toggleHistorial(){
     let box = document.getElementById("historialBox");
     if(box.style.display === "none") {
         box.style.display = "block";
         let html = historial.slice().reverse().map(h => `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><b>${h.placa}</b> - Q${h.precio} (${h.tipo})</div>`).join('');
-        if(usuarioActivo.rol === "ADMIN") html += `<button class="ios-btn-danger" onclick="borrarTodo()">BORRAR TODO EL HISTORIAL</button>`;
-        box.innerHTML = html || "Sin movimientos";
+        
+        // LÓGICA DE BOTONES SEGÚN ROL
+        if(usuarioActivo.rol === "ADMIN") {
+            html += `<button class="ios-btn-danger" onclick="borrarHistorialTotal()">BORRAR TODO (ADMIN)</button>`;
+        } else {
+            html += `<button class="ios-btn-danger" style="background:#ff9500;" onclick="cerrarTurnoOperador()">CERRAR TURNO (BORRAR MI HISTORIAL)</button>`;
+        }
+        
+        box.innerHTML = html || "Sin movimientos en este turno";
     } else box.style.display = "none";
 }
 
-function borrarTodo(){ if(confirm("¿Seguro que desea borrar permanentemente?")){ historial = []; localStorage.setItem("historial", JSON.stringify(historial)); toggleHistorial(); } }
+function cerrarTurnoOperador(){
+    if(confirm("¿Seguro que desea cerrar su turno? Esto borrará el historial actual para el siguiente operador.")){
+        historial = [];
+        localStorage.setItem("historial", JSON.stringify(historial));
+        toggleHistorial();
+        alert("Turno cerrado. El historial está limpio.");
+    }
+}
+
+function borrarHistorialTotal(){
+    if(confirm("¿BORRAR TODO EL HISTORIAL DEL SISTEMA?")){
+        historial = [];
+        localStorage.setItem("historial", JSON.stringify(historial));
+        toggleHistorial();
+    }
+}
 
 // TICKETS
 function imprimirTicketEntrada(v){
@@ -179,7 +200,7 @@ function imprimirTicketSalida(h){
     w.document.close();
 }
 
-// REPORTE FINAL A4 EN IMAGEN
+// REPORTE A4
 function generarReporteHTML() {
     let trabajador = prompt("Nombre del trabajador para el reporte:");
     if (!trabajador) return;
@@ -198,92 +219,47 @@ function generarReporteHTML() {
     reportContainer.style.width = "595px"; 
     reportContainer.style.background = "white"; 
     reportContainer.style.padding = "40px";
-    reportContainer.style.fontFamily = "Arial, sans-serif";
 
     reportContainer.innerHTML = `
-        <div style="border: 1px solid #000; padding: 30px; min-height: 842px; position: relative; color: #000;">
+        <div style="border: 1px solid #000; padding: 30px; min-height: 800px; font-family: Arial;">
             <center>
                 <img src="logotorre.png" width="180">
-                <h1 style="margin: 20px 0 5px 0; font-size: 28px;">REPORTE DE TURNO</h1>
-                <p style="font-size: 16px; margin: 0;">Parqueo Torre Granados</p>
+                <h1>REPORTE DE TURNO</h1>
             </center>
-            
-            <div style="margin-top: 30px; font-size: 14px; display: flex; justify-content: space-between;">
+            <div style="display:flex; justify-content:space-between; margin-top:30px;">
                 <span><b>OPERADOR:</b> ${trabajador.toUpperCase()}</span>
                 <span><b>FECHA:</b> ${new Date().toLocaleDateString()}</span>
             </div>
-            <hr style="margin: 20px 0; border: 1px solid #000;">
-
-            <h3 style="background: #f2f2f7; padding: 10px; font-size: 16px;">DETALLE DE VEHÍCULOS</h3>
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #000; text-align: left;">
-                        <th style="padding: 10px;">Placa</th>
-                        <th>Tipo</th>
-                        <th style="text-align: right;">Monto</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${vehiculos.map(x => `
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="padding: 8px;">${x.placa}</td>
-                            <td>${x.tipo}</td>
-                            <td style="text-align: right; font-weight: bold;">${x.precio > 0 ? 'Q'+x.precio+'.00' : 'Q0.00 (Q'+x.valorSello+')'}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
+            <hr>
+            <h3>DETALLE DE VEHÍCULOS</h3>
+            <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                <tr style="border-bottom:2px solid #000; text-align:left;"><th>Placa</th><th>Tipo</th><th style="text-align:right;">Monto</th></tr>
+                ${vehiculos.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td>${x.tipo}</td><td style="text-align:right;">${x.precio > 0 ? 'Q'+x.precio+'.00' : 'Q0.00 (Q'+x.valorSello+')'}</td></tr>`).join('')}
             </table>
 
             ${otrosServicios.length > 0 ? `
-                <h3 style="background: #f2f2f7; padding: 10px; margin-top: 30px; font-size: 16px;">OTROS SERVICIOS</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                    <tbody>
-                        ${otrosServicios.map(x => `
-                            <tr style="border-bottom: 1px solid #ddd;">
-                                <td style="padding: 8px;">${x.placa}</td>
-                                <td style="text-align: right; font-weight: bold;">Q${x.precio}.00</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
+                <h3 style="margin-top:20px;">OTROS SERVICIOS</h3>
+                <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                    ${otrosServicios.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td style="text-align:right;">Q${x.precio}.00</td></tr>`).join('')}
                 </table>
             ` : ''}
 
-            <div style="margin-top: 50px; border: 2px solid #000; padding: 25px; border-radius: 10px; background: #fafafa;">
-                <table style="width: 100%; font-size: 18px;">
-                    <tr>
-                        <td style="padding-bottom: 5px;">Total Solo Vehículos:</td>
-                        <td style="text-align: right; padding-bottom: 5px;">Q${totalSoloVehiculos}.00</td>
-                    </tr>
-                    <tr>
-                        <td style="border-bottom: 1px solid #000; padding-bottom: 5px;">Otros Servicios:</td>
-                        <td style="text-align: right; border-bottom: 1px solid #000; padding-bottom: 5px;">Q${totalOtros}.00</td>
-                    </tr>
-                    <tr style="font-size: 26px; font-weight: bold; color: #000;">
-                        <td style="padding-top: 15px;">TOTAL GENERAL CAJA:</td>
-                        <td style="text-align: right; padding-top: 15px;">Q${totalCaja}.00</td>
-                    </tr>
+            <div style="margin-top:40px; border:2px solid #000; padding:20px; background:#f9f9f9;">
+                <table style="width:100%; font-size:18px;">
+                    <tr><td>Total Vehículos:</td><td style="text-align:right;">Q${totalSoloVehiculos}.00</td></tr>
+                    <tr><td>Otros Servicios:</td><td style="text-align:right;">Q${totalOtros}.00</td></tr>
+                    <tr style="font-size:24px; font-weight:bold;"><td>TOTAL CAJA:</td><td style="text-align:right;">Q${totalCaja}.00</td></tr>
                 </table>
-                <p style="margin-top: 25px; font-size: 13px; color: #444; border-top: 1px dashed #000; padding-top: 10px;">
-                    <b>Información de Sellos:</b> Monto acumulado por convenios (no efectivo): Q${totalSellos}.00
-                </p>
-            </div>
-
-            <div style="position: absolute; bottom: 40px; width: 88%; text-align: center; font-size: 11px; color: #555;">
-                Comprobante de cierre generado digitalmente por el Sistema Torre Granados el ${new Date().toLocaleString()}
+                <p style="font-size:12px; margin-top:10px;">* Pendiente por cobrar sellos: Q${totalSellos}.00</p>
             </div>
         </div>
     `;
 
     document.body.appendChild(reportContainer);
-
-    html2canvas(reportContainer, {
-        scale: 2, 
-        useCORS: true,
-        backgroundColor: "#ffffff"
-    }).then(canvas => {
+    html2canvas(reportContainer, {scale: 2}).then(canvas => {
         let link = document.createElement("a");
-        link.download = `REPORTE_${trabajador.toUpperCase()}_${new Date().toLocaleDateString().replace(/\//g, '-')}.png`;
-        link.href = canvas.toDataURL("image/png");
+        link.download = `Reporte_${trabajador.toUpperCase()}.png`;
+        link.href = canvas.toDataURL();
         link.click();
         document.body.removeChild(reportContainer);
     });
