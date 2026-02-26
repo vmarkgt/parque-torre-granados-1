@@ -17,7 +17,6 @@ window.onload = () => {
 
 // DATOS DE VEHÍCULOS Y MOVIMIENTOS
 let activos = JSON.parse(localStorage.getItem("activos")) || [];
-// Convertir fechas string a objetos Date
 activos = activos.map(v => ({...v, horaEntrada: new Date(v.horaEntrada), sellos: v.sellos || 0}));
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
 
@@ -63,7 +62,7 @@ function registrarEntrada(){
     actualizarLista();
 }
 
-// COBROS EXTRAS (BAÑO, TICKET PERDIDO, MENSUAL)
+// COBROS EXTRAS
 function cobrarTicketPerdido() {
     let placa = prompt("Ingrese la PLACA del vehículo:");
     if(!placa) return;
@@ -96,7 +95,6 @@ function agregarSello(index){
     activos[index].sellos += 1;
     let v = activos[index];
     let min = Math.ceil((new Date() - v.horaEntrada) / 60000);
-    // Si los sellos cubren el tiempo total, sale automáticamente
     if((v.sellos * 30) >= min) darSalida(index);
     else { localStorage.setItem("activos", JSON.stringify(activos)); actualizarLista(); }
 }
@@ -109,7 +107,6 @@ function darSalida(index){
     let inicial = v.placa[0];
     let precio = 0;
     
-    // Cálculo: Carro (5) o Moto (3) por cada 30 min
     let valSelloTotal = Math.ceil(minTotales / 30) * (inicial === "M" ? 3 : 5);
     if(minFinales > 0) precio = Math.ceil(minFinales / 30) * (inicial === "M" ? 3 : 5);
 
@@ -153,7 +150,6 @@ function toggleHistorial(){
     if(box.style.display === "none") {
         box.style.display = "block";
         let html = historial.slice().reverse().map(h => `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><b>${h.placa}</b> - Q${h.precio} (${h.tipo})</div>`).join('');
-        
         if(usuarioActivo.rol === "ADMIN") {
             html += `<button class="ios-btn-danger" onclick="borrarHistorialTotal()">BORRAR TODO (ADMIN)</button>`;
         } else {
@@ -168,7 +164,7 @@ function cerrarTurnoOperador(){
         historial = [];
         localStorage.setItem("historial", JSON.stringify(historial));
         toggleHistorial();
-        alert("Turno cerrado. Historial limpio.");
+        alert("Turno cerrado.");
     }
 }
 
@@ -180,7 +176,7 @@ function borrarHistorialTotal(){
     }
 }
 
-// --- SECCIÓN DE IMPRESIÓN OPTIMIZADA EPSON TM-T20III ---
+// --- IMPRESIÓN OPTIMIZADA SIN RECTÁNGULOS Y MENOS ESPACIO SUPERIOR ---
 
 function imprimirTicketEntrada(v){
     let w = window.open("","","width=300,height=900");
@@ -191,27 +187,25 @@ function imprimirTicketEntrada(v){
                 font-family: 'Arial', sans-serif; 
                 width: 260px; 
                 margin: 0; 
-                padding: 100px 10px 250px 10px; 
+                padding: 30px 10px 220px 10px; /* Menos espacio arriba, mantenemos abajo */
                 text-align: center;
-                min-height: 650px; 
+                min-height: 600px; 
             }
-            .border-box { border: 5px solid #000; padding: 10px; display: block; margin: 15px auto; width: 85%; }
-            h1 { font-size: 55px; margin: 0; font-weight: 900; }
+            h1 { font-size: 65px; margin: 10px 0; font-weight: 900; }
+            p { margin: 5px 0; }
         </style></head>
         <body onload="window.print();window.close()">
-            <img src="logotorre.png" width="140"><br>
-            <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">TORRE GRANADOS</p>
+            <img src="logotorre.png" width="130">
+            <p style="font-size: 18px; font-weight: bold;">TORRE GRANADOS</p>
             <hr style="border: 1px solid #000;">
-            <div class="border-box">
-                <h1>${v.placa}</h1>
-            </div>
-            <p style="font-size: 16px; margin: 10px 0;">
+            <h1>${v.placa}</h1>
+            <hr style="border: 1px solid #000;">
+            <p style="font-size: 16px;">
                 <b>ENTRADA:</b> ${new Date().toLocaleTimeString()}<br>
                 <b>FECHA:</b> ${new Date().toLocaleDateString()}
             </p>
-            <hr style="border: 1px solid #000;">
-            <p style="font-size: 14px; font-weight: bold;">30 MIN GRATIS POR SELLO</p>
-            <div style="margin-top: 200px; color: white;">.</div> 
+            <p style="font-size: 14px; font-weight: bold; margin-top:10px;">30 MIN GRATIS POR SELLO</p>
+            <div style="margin-top: 180px; color: white;">.</div> 
         </body></html>`);
     w.document.close();
 }
@@ -226,55 +220,43 @@ function imprimirTicketSalida(h){
                 font-family: 'Arial', sans-serif; 
                 width: 260px; 
                 margin: 0; 
-                padding: 100px 10px 250px 10px; 
+                padding: 30px 10px 220px 10px; 
                 text-align: center;
-                min-height: 650px;
+                min-height: 600px;
             }
-            .total-box { 
-                border: 6px solid #000; 
-                color: #000; 
-                padding: 15px; 
-                font-size: 52px; 
-                font-weight: 900; 
-                margin: 20px auto;
-                width: 85%;
-            }
+            .precio-grande { font-size: 70px; font-weight: 900; margin: 15px 0; }
+            p { margin: 5px 0; }
         </style></head>
         <body onload="window.print();window.close()">
-            <img src="logotorre.png" width="120">
+            <img src="logotorre.png" width="110">
             <hr style="border: 1px solid #000;">
-            <h2 style="margin:5px 0; font-size: 26px;">PLACA: ${h.placa}</h2>
-            <div class="total-box">${visualPrecio}</div>
-            <p style="font-size: 16px; font-weight: bold;">
+            <p style="font-size: 22px; font-weight: bold;">PLACA: ${h.placa}</p>
+            <div class="precio-grande">${visualPrecio}</div>
+            <hr style="border: 1px solid #000;">
+            <p style="font-size: 15px;">
                 E: ${h.horaE} | S: ${h.horaS}<br>
                 FECHA: ${h.fecha}
             </p>
-            <hr style="border: 1px solid #000;">
-            <p style="font-size: 14px; font-weight: bold;">¡GRACIAS POR SU VISITA!</p>
-            <div style="margin-top: 200px; color: white;">.</div>
+            <p style="font-size: 14px; font-weight: bold; margin-top: 10px;">¡GRACIAS POR SU VISITA!</p>
+            <div style="margin-top: 180px; color: white;">.</div>
         </body></html>`);
     w.document.close();
 }
 
-// GENERACIÓN DE REPORTE FINAL EN IMAGEN A4
+// GENERACIÓN DE REPORTE FINAL
 function generarReporteHTML() {
-    let trabajador = prompt("Nombre del trabajador para el reporte:");
+    let trabajador = prompt("Nombre del trabajador:");
     if (!trabajador) return;
-
     let vehiculos = historial.filter(x => x.tipo === "EFECTIVO" || x.tipo === "SELLO TOTAL");
-    let otrosServicios = historial.filter(x => x.tipo === "BAÑO" || x.tipo === "TICKET PERDIDO" || x.tipo === "MENSUAL");
-    
+    let otros = historial.filter(x => x.tipo === "BAÑO" || x.tipo === "TICKET PERDIDO" || x.tipo === "MENSUAL");
     let totalCaja = historial.reduce((s, x) => s + x.precio, 0);
     let totalSoloVehiculos = vehiculos.reduce((s, x) => s + x.precio, 0);
-    let totalOtros = otrosServicios.reduce((s, x) => s + x.precio, 0);
+    let totalOtros = otros.reduce((s, x) => s + x.precio, 0);
     let totalSellos = historial.reduce((s, x) => s + (x.valorSello || 0), 0);
 
     let reportContainer = document.createElement("div");
-    reportContainer.style.position = "fixed"; 
-    reportContainer.style.left = "-9999px";
-    reportContainer.style.width = "595px"; 
-    reportContainer.style.background = "white"; 
-    reportContainer.style.padding = "40px";
+    reportContainer.style.position = "fixed"; reportContainer.style.left = "-9999px";
+    reportContainer.style.width = "595px"; reportContainer.style.background = "white"; reportContainer.style.padding = "40px";
 
     reportContainer.innerHTML = `
         <div style="border: 1px solid #000; padding: 30px; min-height: 800px; font-family: Arial;">
@@ -289,19 +271,13 @@ function generarReporteHTML() {
                 <tr style="border-bottom:2px solid #000; text-align:left;"><th>Placa</th><th>Tipo</th><th style="text-align:right;">Monto</th></tr>
                 ${vehiculos.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td>${x.tipo}</td><td style="text-align:right;">${x.precio > 0 ? 'Q'+x.precio+'.00' : 'Q0.00 (Q'+x.valorSello+')'}</td></tr>`).join('')}
             </table>
-            ${otrosServicios.length > 0 ? `
-                <h3 style="margin-top:20px;">OTROS SERVICIOS</h3>
-                <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                    ${otrosServicios.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td style="text-align:right;">Q${x.precio}.00</td></tr>`).join('')}
-                </table>
-            ` : ''}
+            ${otros.length > 0 ? `<h3 style="margin-top:20px;">OTROS SERVICIOS</h3><table style="width:100%; font-size:12px; border-collapse:collapse;">${otros.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td style="text-align:right;">Q${x.precio}.00</td></tr>`).join('')}</table>` : ''}
             <div style="margin-top:40px; border:2px solid #000; padding:20px; background:#f9f9f9;">
                 <table style="width:100%; font-size:18px;">
                     <tr><td>Total Vehículos:</td><td style="text-align:right;">Q${totalSoloVehiculos}.00</td></tr>
                     <tr><td>Otros Servicios:</td><td style="text-align:right;">Q${totalOtros}.00</td></tr>
                     <tr style="font-size:24px; font-weight:bold;"><td>TOTAL CAJA:</td><td style="text-align:right;">Q${totalCaja}.00</td></tr>
                 </table>
-                <p style="font-size:12px; margin-top:10px;">* Sellos acumulados (Convenios): Q${totalSellos}.00</p>
             </div>
         </div>
     `;
@@ -309,7 +285,7 @@ function generarReporteHTML() {
     document.body.appendChild(reportContainer);
     html2canvas(reportContainer, {scale: 2}).then(canvas => {
         let link = document.createElement("a");
-        link.download = `Reporte_${trabajador.toUpperCase()}_${new Date().toLocaleDateString().replace(/\//g, '-')}.png`;
+        link.download = `Reporte_${trabajador.toUpperCase()}.png`;
         link.href = canvas.toDataURL();
         link.click();
         document.body.removeChild(reportContainer);
