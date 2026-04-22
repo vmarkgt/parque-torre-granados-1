@@ -52,12 +52,12 @@
 
         <div class="card center-content">
             <div class="button-row" style="margin-bottom: 12px;">
-                <button class="ios-btn-alt btn-med" onclick="cobrarBaño()" style="background:#5ac8fa;">Baño (Q3)</button>
-                <button class="ios-btn-alt btn-med" onclick="cobrarTicketPerdido()" style="background:#ffcc00; color:#000;">T. Perdido</button>
-                <button class="ios-btn-alt btn-med" onclick="abrirModalMensual()" style="background:#af52de;">Mensual</button>
+                <button class="ios-btn-alt btn-med" onclick="cobrarBaño()" style="background:#001441;">Baño (Q3)</button>
+                <button class="ios-btn-alt btn-med" onclick="cobrarTicketPerdido()" style="background:#0138a7; color:#ffffff;">T. Perdido</button>
+                <button class="ios-btn-alt btn-med" onclick="abrirModalMensual()" style="background:#0265f0;">Mensual</button>
             </div>
             <div class="button-row">
-                <button class="ios-btn-alt" style="background:#8e8e93;" onclick="toggleHistorial()">Ver Historial</button>
+                <button class="ios-btn-alt" style="background:#7f7f82;" onclick="toggleHistorial()">Ver Historial</button>
                 <button class="ios-btn-report" onclick="generarReporteHTML()">Reporte Final</button>
             </div>
             <div id="historialBox" class="historial-container" style="display:none;"></div>
@@ -70,7 +70,7 @@
 
     <div id="modalMensual" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
         <div class="card" style="width:85%; max-width:350px;">
-            <h3 style="margin-top:0;">Cliente Mensual</h3>
+            <h3 style="margin-top:0; color:#ffffff;">Cliente Mensual</h3> 
             <div class="input-field"><label>Nombre del Cliente</label><input type="text" id="mNombre"></div>
             <div class="input-field"><label>Monto a Pagar Q</label><input type="number" id="mCosto"></div>
             <button class="ios-btn" style="padding:15px; margin-bottom:10px;" onclick="guardarMensualidad()">Guardar Pago</button>
