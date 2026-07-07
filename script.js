@@ -1,4 +1,6 @@
-// CONFIGURACIÓN DE USUARIOS
+// ==========================================================================
+// CONFIGURACIÓN DE USUARIOS Y ACCESOS
+// ==========================================================================
 const usuariosSistemas = [
     {user: "admin", pass: "admin2026", rol: "ADMIN"},
     {user: "torregranados", pass: "torre2026", rol: "OPERADOR"}
@@ -49,7 +51,9 @@ function login(){
     }
 }
 
-// REGISTRO DE ENTRADA
+// ==========================================================================
+// REGISTRO DE MOVIMIENTOS (ENTRADAS Y COBROS)
+// ==========================================================================
 function registrarEntrada(){
     let input = document.getElementById("plateInput");
     let placa = input.value.trim().toUpperCase();
@@ -62,19 +66,43 @@ function registrarEntrada(){
     actualizarLista();
 }
 
-// COBROS EXTRAS
+// REGLA 1: COBRAR TICKET PERDIDO (SÍ IMPRIME - NATIVO)
 function cobrarTicketPerdido() {
     let placa = prompt("Ingrese la PLACA del vehículo:");
     if(!placa) return;
-    historial.push({placa: "T. PERDIDO: " + placa.toUpperCase(), tipo: "TICKET PERDIDO", precio: 25, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user, valorSello: 0});
+    
+    let registro = {
+        placa: "PLACA: " + placa.toUpperCase(), 
+        tipo: "TICKET PERDIDO", 
+        precio: 25, 
+        fecha: new Date().toLocaleDateString(), 
+        operador: usuarioActivo.user, 
+        valorSello: 0
+    };
+    
+    historial.push(registro);
     localStorage.setItem("historial", JSON.stringify(historial));
-    alert("Cobro registrado (Q25)");
+    
+    // Ejecuta la impresión nativa heredada sin tocar layouts de Android
+    if (window.AndroidPrinter && window.AndroidPrinter.ticketExtra) {
+        window.AndroidPrinter.ticketExtra("REPOSICIÓN TICKET PERDIDO", "Q25.00", registro.placa, registro.fecha, registro.operador);
+    }
+    
+    alert("Cobro registrado e imprimiendo (Q25)");
 }
 
+// REGLA 2: COBRAR BAÑO (SOLO REGISTRA EN SILENCIO - NO IMPRIME)
 function cobrarBaño() {
-    historial.push({placa: "USO DE BAÑO", tipo: "BAÑO", precio: 3, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user, valorSello: 0});
+    historial.push({
+        placa: "USO DE BAÑO", 
+        tipo: "BAÑO", 
+        precio: 3, 
+        fecha: new Date().toLocaleDateString(), 
+        operador: usuarioActivo.user, 
+        valorSello: 0
+    });
     localStorage.setItem("historial", JSON.stringify(historial));
-    alert("Uso de baño registrado (Q3)");
+    alert("Uso de baño registrado en caja (Q3)");
 }
 
 function abrirModalMensual() { document.getElementById("modalMensual").style.display = "flex"; }
@@ -84,13 +112,23 @@ function guardarMensualidad() {
     const nombre = document.getElementById("mNombre").value;
     const costo = parseFloat(document.getElementById("mCosto").value);
     if(!nombre || !costo) return alert("Faltan datos");
-    historial.push({placa: `MENSUAL: ${nombre.toUpperCase()}`, tipo: "MENSUAL", precio: costo, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user, valorSello: 0});
+    
+    historial.push({
+        placa: `MENSUAL: ${nombre.toUpperCase()}`, 
+        tipo: "MENSUAL", 
+        precio: costo, 
+        fecha: new Date().toLocaleDateString(), 
+        operador: usuarioActivo.user, 
+        valorSello: 0
+    });
     localStorage.setItem("historial", JSON.stringify(historial));
     cerrarModalMensual();
     alert("Pago mensual guardado");
 }
 
+// ==========================================================================
 // LÓGICA DE SELLOS Y SALIDA
+// ==========================================================================
 function agregarSello(index){
     activos[index].sellos += 1;
     let v = activos[index];
@@ -132,6 +170,7 @@ function darSalida(index){
 
 function actualizarLista(){
     let cont = document.getElementById("activeList");
+    if(!cont) return;
     cont.innerHTML = "";
     activos.forEach((v, i) => {
         let div = document.createElement("div"); div.className = "vehiculo-item";
@@ -144,9 +183,12 @@ function actualizarLista(){
     });
 }
 
-// HISTORIAL Y CIERRE DE TURNOS
+// ==========================================================================
+// GESTIÓN DE HISTORIAL Y CIERRES DE TURNO
+// ==========================================================================
 function toggleHistorial(){
     let box = document.getElementById("historialBox");
+    if(!box) return;
     if(box.style.display === "none") {
         box.style.display = "block";
         let html = historial.slice().reverse().map(h => `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><b>${h.placa}</b> - Q${h.precio} (${h.tipo})</div>`).join('');
@@ -159,135 +201,126 @@ function toggleHistorial(){
     } else box.style.display = "none";
 }
 
+// REGLA 3: CIERRE DE TURNO FILTRADO (SOLO OPERADOR ACTUAL - ADMIN INTACTO)
 function cerrarTurnoOperador(){
-    if(confirm("¿Seguro que desea cerrar su turno? Esto limpiará su historial.")){
-        historial = [];
+    if(confirm("¿Seguro que desea cerrar su turno? Esto limpiará su historial de la sesión activa.")){
+        // Elimina únicamente los registros que pertenecen al operador logueado en este instante
+        historial = historial.filter(x => x.operador !== usuarioActivo.user);
         localStorage.setItem("historial", JSON.stringify(historial));
         toggleHistorial();
-        alert("Turno cerrado.");
+        alert("Turno finalizado. Historial del operador limpio.");
     }
 }
 
 function borrarHistorialTotal(){
-    if(confirm("¿BORRAR TODO EL HISTORIAL DEL SISTEMA?")){
+    if(confirm("¿BORRAR TODO EL HISTORIAL GENERAL DEL SISTEMA (ACCION ADMIN)?")){
         historial = [];
         localStorage.setItem("historial", JSON.stringify(historial));
         toggleHistorial();
     }
 }
 
-// --- IMPRESIÓN AJUSTADA (TEXTOS SEGUROS PARA EPSON TM-T20III) ---
-
+// ==========================================================================
+// CONTROLADORES DE IMPRESIÓN DIRECTA DE DATOS (NATIVOS DE HARDWARE)
+// ==========================================================================
 function imprimirTicketEntrada(v){
-    let w = window.open("","","width=300,height=900");
-    w.document.write(`
-        <html><head><style>
-            @page { margin: 0; }
-            body { 
-                font-family: 'Arial', sans-serif; 
-                width: 260px; 
-                margin: 0; 
-                padding: 30px 5px 220px 5px; 
-                text-align: center;
-                min-height: 600px; 
-            }
-            h1 { font-size: 52px; margin: 15px 0; font-weight: 900; letter-spacing: -1px; }
-            p { margin: 5px 0; }
-        </style></head>
-        <body onload="window.print();window.close()">
-            <img src="logotorre.png" width="130">
-            <p style="font-size: 18px; font-weight: bold;">TORRE GRANADOS</p>
-            <hr style="border: 1px solid #000;">
-            <h1>${v.placa}</h1>
-            <hr style="border: 1px solid #000;">
-            <p style="font-size: 16px;">
-                <b>ENTRADA:</b> ${new Date().toLocaleTimeString()}<br>
-                <b>FECHA:</b> ${new Date().toLocaleDateString()}
-            </p>
-            <p style="font-size: 14px; font-weight: bold; margin-top:10px;">30 MIN GRATIS POR SELLO</p>
-            <div style="margin-top: 180px; color: white;">.</div> 
-        </body></html>`);
-    w.document.close();
+    const horaStr = v.horaEntrada.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    const fechaStr = v.horaEntrada.toLocaleDateString();
+
+    if (window.AndroidPrinter && window.AndroidPrinter.ticketEntrada) {
+        window.AndroidPrinter.ticketEntrada(v.placa, horaStr, fechaStr);
+    }
 }
 
 function imprimirTicketSalida(h){
-    let w = window.open("","","width=300,height=800");
-    let visualPrecio = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00`;
-    w.document.write(`
-        <html><head><style>
-            @page { margin: 0; }
-            body { 
-                font-family: 'Arial', sans-serif; 
-                width: 260px; 
-                margin: 0; 
-                padding: 30px 5px 140px 5px; 
-                text-align: center;
-                min-height: 450px;
-            }
-            .precio-grande { font-size: 58px; font-weight: 900; margin: 15px 0; letter-spacing: -1px; }
-            p { margin: 5px 0; }
-        </style></head>
-        <body onload="window.print();window.close()">
-            <img src="logotorre.png" width="110">
-            <hr style="border: 1px solid #000;">
-            <p style="font-size: 24px; font-weight: bold;">PLACA: ${h.placa}</p>
-            <div class="precio-grande">${visualPrecio}</div>
-            <hr style="border: 1px solid #000;">
-            <p style="font-size: 15px;">
-                E: ${h.horaE} | S: ${h.horaS}<br>
-                FECHA: ${h.fecha}
-            </p>
-            <p style="font-size: 14px; font-weight: bold; margin-top: 10px;">¡GRACIAS POR SU VISITA!</p>
-            <div style="margin-top: 100px; color: white;">.</div>
-        </body></html>`);
-    w.document.close();
+    const visualPrecio = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00`;
+
+    if (window.AndroidPrinter && window.AndroidPrinter.ticketSalida) {
+        window.AndroidPrinter.ticketSalida(h.placa, visualPrecio, h.horaE, h.horaS, h.fecha);
+    }
 }
 
-// GENERACIÓN DE REPORTE FINAL
+// REGLA 4: REPORTE GENERAL VISUAL (BAJA IMAGEN PNG A LA GALERÍA - NO ENVIAR A TICKET)
 function generarReporteHTML() {
     let trabajador = prompt("Nombre del trabajador:");
     if (!trabajador) return;
+    
     let vehiculos = historial.filter(x => x.tipo === "EFECTIVO" || x.tipo === "SELLO TOTAL");
     let otros = historial.filter(x => x.tipo === "BAÑO" || x.tipo === "TICKET PERDIDO" || x.tipo === "MENSUAL");
     let totalCaja = historial.reduce((s, x) => s + x.precio, 0);
     let totalSoloVehiculos = vehiculos.reduce((s, x) => s + x.precio, 0);
     let totalOtros = otros.reduce((s, x) => s + x.precio, 0);
-    let totalSellos = historial.reduce((s, x) => s + (x.valorSello || 0), 0);
 
     let reportContainer = document.createElement("div");
-    reportContainer.style.position = "fixed"; reportContainer.style.left = "-9999px";
-    reportContainer.style.width = "595px"; reportContainer.style.background = "white"; reportContainer.style.padding = "40px";
+    reportContainer.style.position = "fixed"; 
+    reportContainer.style.left = "-9999px";
+    reportContainer.style.width = "595px"; 
+    reportContainer.style.background = "white"; 
+    reportContainer.style.padding = "40px";
 
     reportContainer.innerHTML = `
-        <div style="border: 1px solid #000; padding: 30px; min-height: 800px; font-family: Arial;">
-            <center><img src="logotorre.png" width="180"><h1>REPORTE DE TURNO</h1></center>
-            <div style="display:flex; justify-content:space-between; margin-top:30px;">
+        <div style="border: 1px solid #000; padding: 30px; min-height: 800px; font-family: Arial; color: #000000;">
+            <center>
+                <h1 style="margin:0; font-size:28px;">TORRE GRANADOS</h1>
+                <h2 style="margin:5px 0 20px 0; font-size:20px; font-weight:normal;">REPORTE DE TURNO</h2>
+            </center>
+            <div style="display:flex; justify-content:space-between; margin-top:30px; font-size:14px;">
                 <span><b>OPERADOR:</b> ${trabajador.toUpperCase()}</span>
                 <span><b>FECHA:</b> ${new Date().toLocaleDateString()}</span>
             </div>
-            <hr>
+            <hr style="border: 1px solid #000; margin: 15px 0;">
             <h3>DETALLE DE VEHÍCULOS</h3>
             <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                <tr style="border-bottom:2px solid #000; text-align:left;"><th>Placa</th><th>Tipo</th><th style="text-align:right;">Monto</th></tr>
-                ${vehiculos.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td>${x.tipo}</td><td style="text-align:right;">${x.precio > 0 ? 'Q'+x.precio+'.00' : 'Q0.00 (Q'+x.valorSello+')'}</td></tr>`).join('')}
+                <tr style="border-bottom:2px solid #000; text-align:left;">
+                    <th style="padding:5px;">Placa</th>
+                    <th>Tipo</th>
+                    <th style="text-align:right; padding:5px;">Monto</th>
+                </tr>
+                ${vehiculos.map(x => `
+                    <tr>
+                        <td style="padding:6px 5px; border-bottom:1px solid #ddd;">${x.placa}</td>
+                        <td style="border-bottom:1px solid #ddd;">${x.tipo}</td>
+                        <td style="text-align:right; padding:6px 5px; border-bottom:1px solid #ddd;">${x.precio > 0 ? 'Q'+x.precio+'.00' : 'Q0.00'}</td>
+                    </tr>
+                `).join('')}
             </table>
-            ${otros.length > 0 ? `<h3 style="margin-top:20px;">OTROS SERVICIOS</h3><table style="width:100%; font-size:12px; border-collapse:collapse;">${otros.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td style="text-align:right;">Q${x.precio}.00</td></tr>`).join('')}</table>` : ''}
-            <div style="margin-top:40px; border:2px solid #000; padding:20px; background:#f9f9f9;">
-                <table style="width:100%; font-size:18px;">
-                    <tr><td>Total Vehículos:</td><td style="text-align:right;">Q${totalSoloVehiculos}.00</td></tr>
-                    <tr><td>Otros Servicios:</td><td style="text-align:right;">Q${totalOtros}.00</td></tr>
-                    <tr style="font-size:24px; font-weight:bold;"><td>TOTAL CAJA:</td><td style="text-align:right;">Q${totalCaja}.00</td></tr>
+            
+            ${otros.length > 0 ? `
+                <h3 style="margin-top:30px;">OTROS SERVICIOS</h3>
+                <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                    <tr style="border-bottom:2px solid #000; text-align:left;">
+                        <th style="padding:5px;">Descripción</th>
+                        <th style="text-align:right; padding:5px;">Monto</th>
+                    </tr>
+                    ${otros.map(x => `
+                        <tr>
+                            <td style="padding:6px 5px; border-bottom:1px solid #ddd;">${x.placa}</td>
+                            <td style="text-align:right; padding:6px 5px; border-bottom:1px solid #ddd;">Q${x.precio}.00</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            ` : ''}
+            
+            <div style="margin-top:50px; border:2px solid #000; padding:20px; background:#f9f9f9;">
+                <table style="width:100%; font-size:16px; border-collapse:collapse;">
+                    <tr style="border-bottom:1px solid #ccc;"><td style="padding:4px 0;">Total Vehículos:</td><td style="text-align:right;">Q${totalSoloVehiculos}.00</td></tr>
+                    <tr style="border-bottom:1px solid #ccc;"><td style="padding:4px 0;">Otros Servicios:</td><td style="text-align:right;">Q${totalOtros}.00</td></tr>
+                    <tr style="font-size:22px; font-weight:bold;"><td style="padding:10px 0 0 0;">TOTAL EN CAJA:</td><td style="text-align:right; padding:10px 0 0 0;">Q${totalCaja}.00</td></tr>
                 </table>
             </div>
         </div>
     `;
 
     document.body.appendChild(reportContainer);
+    
     html2canvas(reportContainer, {scale: 2}).then(canvas => {
         let link = document.createElement("a");
-        link.download = `Reporte_${trabajador.toUpperCase()}.png`;
-        link.href = canvas.toDataURL();
+        link.download = `Reporte_${trabajador.toUpperCase()}_${new Date().toISOString().slice(0,10)}.png`;
+        link.href = canvas.toDataURL("image/png");
         link.click();
+        document.body.removeChild(reportContainer);
+    }).catch(err => {
+        console.error("Error capturando reporte:", err);
         document.body.removeChild(reportContainer);
     });
 }
