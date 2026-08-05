@@ -97,40 +97,35 @@ function registrarEntrada() {
     vehiculosActivos.push(nuevoVehiculo);
     guardarDatos();
     renderizarActivos();
-    imprimirTicketEntrada(nuevoVehiculo.placa, nuevoVehiculo.horaEntradaFormato, false);
+    
+    // Procesa el ticket con tu diseño estándar
+    imprimirTicketOriginal(nuevoVehiculo.placa, nuevoVehiculo.horaEntradaFormato);
 
     plateInput.value = '';
 }
 
-// --- TICKET PERDIDO (REIMPRESIÓN) ---
+// --- FUNCIÓN TICKET PERDIDO (REIMPRESIÓN CON EL DISEÑO ORIGINAL) ---
 function cobrarTicketPerdido() {
-    let placaInput = prompt("Ingrese el número de placa para el Ticket Perdido:");
-    
-    if (!placaInput) return; // Si se cancela o no se ingresa nada
+    let placaInput = prompt("Ingrese el número de placa para reimprimir el ticket:");
+    if (!placaInput) return;
     
     let placa = placaInput.toUpperCase().trim();
     if (placa === "") return;
 
-    // Buscar si el vehículo ya está registrado en el parqueo
-    let vehiculo = vehiculosActivos.find(v => v.placa === placa);
-    let fechaHoraStr = vehiculo ? vehiculo.horaEntradaFormato : new Date().toLocaleString('es-GT');
+    // Coloca la placa en el campo de entrada y ejecuta la lógica de entrada/impresión original
+    let plateInput = document.getElementById('plateInput');
+    if (plateInput) {
+        plateInput.value = placa;
+    }
 
-    // Imprimir el ticket reimpreso con etiqueta de Ticket Perdido
-    imprimirTicketEntrada(placa, fechaHoraStr, true);
+    // Llama a la función de registro para que imprima exactamente con el diseño original de tu sistema
+    registrarEntrada();
 }
 
-// --- MÓDULO DE IMPRESIÓN (ENTRADA Y TICKET PERDIDO) ---
-function imprimirTicketEntrada(placa, fechaEntrada, esTicketPerdido) {
+// --- IMPRESIÓN DEL TICKET ORIGINAL ---
+function imprimirTicketOriginal(placa, fechaEntrada) {
     let ventana = window.open('', '_blank', 'width=300,height=450');
     
-    let encabezadoEstado = esTicketPerdido 
-        ? `<div class="alerta-perdido">*** TICKET PERDIDO ***</div>` 
-        : `<div class="subtitulo">TICKET DE ENTRADA</div>`;
-
-    let textoEstado = esTicketPerdido 
-        ? `REIMPRESIÓN POR EXTRAVÍO` 
-        : `ENTRADA REGISTRADA`;
-
     ventana.document.write(`
         <!DOCTYPE html>
         <html>
@@ -149,15 +144,6 @@ function imprimirTicketEntrada(placa, fechaEntrada, esTicketPerdido) {
                 }
                 .logo { max-width: 120px; height: auto; margin-bottom: 5px; }
                 .titulo { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-                .subtitulo { font-size: 13px; font-weight: bold; margin: 5px 0; }
-                .alerta-perdido { 
-                    border: 2px solid #000; 
-                    padding: 5px; 
-                    font-size: 14px; 
-                    font-weight: bold; 
-                    margin: 10px 0; 
-                    text-transform: uppercase;
-                }
                 .placa-box { 
                     font-size: 26px; 
                     font-weight: bold; 
@@ -173,14 +159,12 @@ function imprimirTicketEntrada(placa, fechaEntrada, esTicketPerdido) {
         <body>
             <img src="logotorre.png" class="logo" alt="Logo" onerror="this.style.display='none'">
             <div class="titulo">PARQUEO TORRE GRANADOS</div>
-            
-            ${encabezadoEstado}
+            <div style="font-size: 13px; font-weight: bold; margin: 5px 0;">TICKET DE ENTRADA</div>
             
             <p style="margin:2px; font-size:12px;">PLACA VEHÍCULO:</p>
             <div class="placa-box">${placa}</div>
             
             <div class="info"><strong>FECHA/HORA:</strong> ${fechaEntrada}</div>
-            <div class="info"><strong>ESTADO:</strong> ${textoEstado}</div>
             
             <div class="footer">
                 <p>Conserve este ticket para el cobro y salida.</p>
@@ -260,7 +244,7 @@ function renderizarActivos() {
     let html = '<ul style="list-style:none; padding:0; margin:0;">';
     vehiculosActivos.forEach(v => {
         html += `
-            <li style="display:flex; justify-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px; margin-bottom:8px; border-radius:8px;">
+            <li style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px; margin-bottom:8px; border-radius:8px;">
                 <div>
                     <strong style="font-size:18px; color:#ffffff;">${v.placa}</strong><br>
                     <small style="color:#8e8e93;">Ingreso: ${v.horaEntradaFormato}</small>
