@@ -1,559 +1,326 @@
- // CONFIGURACIÓN DE USUARIOS
+/* ===================================================
+   SISTEMA DE PARQUEO TORRE GRANADOS - script.js
+   =================================================== */
 
-const usuariosSistemas = [
+// --- ESTADO GLOBAL ---
+let vehiculosActivos = JSON.parse(localStorage.getItem('tg_vehiculosActivos')) || [];
+let historialCobros = JSON.parse(localStorage.getItem('tg_historialCobros')) || [];
 
-    {user: "admin", pass: "admin2026", rol: "ADMIN"},
+// --- INICIALIZACIÓN Y RELOJ ---
+document.addEventListener('DOMContentLoaded', () => {
+    iniciarReloj();
+    verificarSesion();
+    renderizarActivos();
+    renderizarHistorial();
+});
 
-    {user: "torregranados", pass: "torre2026", rol: "OPERADOR"}
+function iniciarReloj() {
+    setInterval(() => {
+        const ahora = new Date();
+        const relojElem = document.getElementById('reloj');
+        const fechaElem = document.getElementById('fecha');
 
-];
+        if (relojElem) {
+            relojElem.innerText = ahora.toLocaleTimeString('es-GT', { hour12: false });
+        }
+        if (fechaElem) {
+            const opcionesFecha = { day: 'numeric', month: 'long', year: 'numeric' };
+            fechaElem.innerText = ahora.toLocaleDateString('es-GT', opcionesFecha);
+        }
+    }, 1000);
+}
 
+// --- SISTEMA DE AUTENTICACIÓN ---
+function login() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+    const rememberMe = document.getElementById('rememberMe').checked;
 
-let usuarioActivo = null;
+    if (user !== "" && pass !== "") {
+        if (rememberMe) {
+            localStorage.setItem('tg_savedUser', user);
+        } else {
+            localStorage.removeItem('tg_savedUser');
+        }
+        localStorage.setItem('tg_currentUser', user);
+        mostrarApp(user);
+    } else {
+        alert("Por favor, ingrese usuario y contraseña.");
+    }
+}
 
+function verificarSesion() {
+    const savedUser = localStorage.getItem('tg_savedUser');
+    const currentUser = localStorage.getItem('tg_currentUser');
 
-// CARGA INICIAL Y PERSISTENCIA DE LOGIN
-
-window.onload = () => {
-
-    const savedUser = localStorage.getItem("rememberedUser");
-
-    if(savedUser) {
-
-        document.getElementById("loginUser").value = savedUser;
-
-        document.getElementById("rememberMe").checked = true;
-
+    if (savedUser) {
+        document.getElementById('loginUser').value = savedUser;
+        document.getElementById('rememberMe').checked = true;
     }
 
-};
+    if (currentUser) {
+        mostrarApp(currentUser);
+    }
+}
 
+function mostrarApp(usuario) {
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('appCard').style.display = 'block';
+    document.getElementById('userDisplay').innerText = `👤 OPERADOR: ${usuario.toUpperCase()}`;
+}
 
-// DATOS DE VEHÍCULOS Y MOVIMIENTOS
+// --- REGISTRO DE ENTRADA ---
+function registrarEntrada() {
+    const plateInput = document.getElementById('plateInput');
+    const placa = plateInput.value.toUpperCase().trim();
 
-let activos = JSON.parse(localStorage.getItem("activos")) || [];
+    if (!placa) {
+        alert("Por favor ingrese un número de placa.");
+        return;
+    }
 
-activos = activos.map(v => ({...v, horaEntrada: new Date(v.horaEntrada), sellos: v.sellos || 0}));
-
-let historial = JSON.parse(localStorage.getItem("historial")) || [];
-
-
-// RELOJ EN TIEMPO REAL
-
-setInterval(() => {
-
-    const relojCont = document.getElementById('reloj');
-
-    if(!relojCont) return;
+    // Verificar si la placa ya está dentro del parqueo
+    const existe = vehiculosActivos.some(v => v.placa === placa);
+    if (existe) {
+        alert("El vehículo con esta placa ya se encuentra en el parqueo.");
+        return;
+    }
 
     const ahora = new Date();
-
-    relojCont.innerText = ahora.toLocaleTimeString();
-
-    document.getElementById('fecha').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-}, 1000);
-
-
-// FUNCIÓN DE ACCESO
-
-function login(){
-
-    const u = document.getElementById("loginUser").value.trim();
-
-    const p = document.getElementById("loginPass").value.trim();
-
-    const rem = document.getElementById("rememberMe").checked;
-
-    const encontrado = usuariosSistemas.find(x => x.user === u && x.pass === p);
-
-
-    if(encontrado) {
-
-        if(rem) localStorage.setItem("rememberedUser", u);
-
-        else localStorage.removeItem("rememberedUser");
-
-        usuarioActivo = encontrado;
-
-        document.getElementById("loginCard").style.display = "none";
-
-        document.getElementById("appCard").style.display = "block";
-
-        document.getElementById("userDisplay").innerHTML = `👤 ${usuarioActivo.rol}: ${usuarioActivo.user.toUpperCase()}`;
-
-        actualizarLista();
-
-    } else {
-
-        alert("Usuario o contraseña incorrectos");
-
-    }
-
-}
-
-
-// REGISTRO DE ENTRADA
-
-function registrarEntrada(){
-
-    let input = document.getElementById("plateInput");
-
-    let placa = input.value.trim().toUpperCase();
-
-    if(!placa) return;
-
-    let v = {placa, horaEntrada: new Date(), user: usuarioActivo.user, sellos: 0};
-
-    activos.push(v);
-
-    localStorage.setItem("activos", JSON.stringify(activos));
-
-    imprimirTicketEntrada(v);
-
-    input.value = "";
-
-    actualizarLista();
-
-}
-
-
-// COBROS EXTRAS
-
-function cobrarTicketPerdido() {
-
-    let placa = prompt("Ingrese la PLACA del vehículo:");
-
-    if(!placa) return;
-
-    historial.push({placa: "T. PERDIDO: " + placa.toUpperCase(), tipo: "TICKET PERDIDO", precio: 25, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user, valorSello: 0});
-
-    localStorage.setItem("historial", JSON.stringify(historial));
-
-    alert("Cobro registrado (Q25)");
-
-}
-
-
-function cobrarBaño() {
-
-    historial.push({placa: "USO DE BAÑO", tipo: "BAÑO", precio: 3, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user, valorSello: 0});
-
-    localStorage.setItem("historial", JSON.stringify(historial));
-
-    alert("Uso de baño registrado (Q3)");
-
-}
-
-
-function abrirModalMensual() { document.getElementById("modalMensual").style.display = "flex"; }
-
-function cerrarModalMensual() { document.getElementById("modalMensual").style.display = "none"; }
-
-
-function guardarMensualidad() {
-
-    const nombre = document.getElementById("mNombre").value;
-
-    const costo = parseFloat(document.getElementById("mCosto").value);
-
-    if(!nombre || !costo) return alert("Faltan datos");
-
-    historial.push({placa: `MENSUAL: ${nombre.toUpperCase()}`, tipo: "MENSUAL", precio: costo, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user, valorSello: 0});
-
-    localStorage.setItem("historial", JSON.stringify(historial));
-
-    cerrarModalMensual();
-
-    alert("Pago mensual guardado");
-
-}
-
-
-// LÓGICA DE SELLOS Y SALIDA
-
-function agregarSello(index){
-
-    activos[index].sellos += 1;
-
-    let v = activos[index];
-
-    let min = Math.ceil((new Date() - v.horaEntrada) / 60000);
-
-    if((v.sellos * 30) >= min) darSalida(index);
-
-    else { localStorage.setItem("activos", JSON.stringify(activos)); actualizarLista(); }
-
-}
-
-
-function darSalida(index){
-
-    let v = activos[index];
-
-    let salida = new Date();
-
-    let minTotales = Math.ceil((salida - v.horaEntrada) / 60000);
-
-    let minFinales = Math.max(0, minTotales - (v.sellos * 30));
-
-    let inicial = v.placa[0];
-
-    let precio = 0;
-
-    
-
-    let valSelloTotal = Math.ceil(minTotales / 30) * (inicial === "M" ? 3 : 5);
-
-    if(minFinales > 0) precio = Math.ceil(minFinales / 30) * (inicial === "M" ? 3 : 5);
-
-
-    let registro = {
-
-        placa: v.placa,
-
-        tipo: (minFinales === 0 && v.sellos > 0) ? "SELLO TOTAL" : "EFECTIVO",
-
-        horaE: v.horaEntrada.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
-
-        horaS: salida.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
-
-        fecha: salida.toLocaleDateString(),
-
-        sellos: v.sellos,
-
-        valorSello: (v.sellos > 0) ? valSelloTotal - precio : 0,
-
-        precio: precio,
-
-        operador: usuarioActivo.user
-
+    const nuevoVehiculo = {
+        id: Date.now(),
+        placa: placa,
+        horaEntrada: ahora.toISOString(),
+        horaEntradaFormato: ahora.toLocaleString('es-GT')
     };
 
+    vehiculosActivos.push(nuevoVehiculo);
+    guardarDatos();
+    renderizarActivos();
+    imprimirTicketEntrada(nuevoVehiculo.placa, nuevoVehiculo.horaEntradaFormato, false);
 
-    historial.push(registro);
-
-    imprimirTicketSalida(registro);
-
-    activos.splice(index, 1);
-
-    localStorage.setItem("activos", JSON.stringify(activos));
-
-    localStorage.setItem("historial", JSON.stringify(historial));
-
-    actualizarLista();
-
+    plateInput.value = '';
 }
 
+// --- TICKET PERDIDO (REIMPRESIÓN) ---
+function cobrarTicketPerdido() {
+    let placaInput = prompt("Ingrese el número de placa para el Ticket Perdido:");
+    
+    if (!placaInput) return; // Si se cancela o no se ingresa nada
+    
+    let placa = placaInput.toUpperCase().trim();
+    if (placa === "") return;
 
-function actualizarLista(){
+    // Buscar si el vehículo ya está registrado en el parqueo
+    let vehiculo = vehiculosActivos.find(v => v.placa === placa);
+    let fechaHoraStr = vehiculo ? vehiculo.horaEntradaFormato : new Date().toLocaleString('es-GT');
 
-    let cont = document.getElementById("activeList");
+    // Imprimir el ticket reimpreso con etiqueta de Ticket Perdido
+    imprimirTicketEntrada(placa, fechaHoraStr, true);
+}
 
-    cont.innerHTML = "";
+// --- MÓDULO DE IMPRESIÓN (ENTRADA Y TICKET PERDIDO) ---
+function imprimirTicketEntrada(placa, fechaEntrada, esTicketPerdido) {
+    let ventana = window.open('', '_blank', 'width=300,height=450');
+    
+    let encabezadoEstado = esTicketPerdido 
+        ? `<div class="alerta-perdido">*** TICKET PERDIDO ***</div>` 
+        : `<div class="subtitulo">TICKET DE ENTRADA</div>`;
 
-    activos.forEach((v, i) => {
+    let textoEstado = esTicketPerdido 
+        ? `REIMPRESIÓN POR EXTRAVÍO` 
+        : `ENTRADA REGISTRADA`;
 
-        let div = document.createElement("div"); div.className = "vehiculo-item";
+    ventana.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Ticket - ${placa}</title>
+            <style>
+                @page { margin: 0; }
+                body { 
+                    font-family: 'Courier New', Courier, monospace; 
+                    width: 250px; 
+                    margin: 0 auto; 
+                    padding: 10px; 
+                    text-align: center;
+                    color: #000;
+                }
+                .logo { max-width: 120px; height: auto; margin-bottom: 5px; }
+                .titulo { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+                .subtitulo { font-size: 13px; font-weight: bold; margin: 5px 0; }
+                .alerta-perdido { 
+                    border: 2px solid #000; 
+                    padding: 5px; 
+                    font-size: 14px; 
+                    font-weight: bold; 
+                    margin: 10px 0; 
+                    text-transform: uppercase;
+                }
+                .placa-box { 
+                    font-size: 26px; 
+                    font-weight: bold; 
+                    margin: 10px 0; 
+                    border-bottom: 1px dashed #000;
+                    border-top: 1px dashed #000;
+                    padding: 5px 0;
+                }
+                .info { font-size: 12px; margin: 4px 0; text-align: left; }
+                .footer { font-size: 10px; margin-top: 15px; border-top: 1px solid #000; padding-top: 5px; }
+            </style>
+        </head>
+        <body>
+            <img src="logotorre.png" class="logo" alt="Logo" onerror="this.style.display='none'">
+            <div class="titulo">PARQUEO TORRE GRANADOS</div>
+            
+            ${encabezadoEstado}
+            
+            <p style="margin:2px; font-size:12px;">PLACA VEHÍCULO:</p>
+            <div class="placa-box">${placa}</div>
+            
+            <div class="info"><strong>FECHA/HORA:</strong> ${fechaEntrada}</div>
+            <div class="info"><strong>ESTADO:</strong> ${textoEstado}</div>
+            
+            <div class="footer">
+                <p>Conserve este ticket para el cobro y salida.</p>
+                <p>¡Gracias por su preferencia!</p>
+            </div>
 
-        div.innerHTML = `<div class="placa-badge">${v.placa}</div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
 
-            <div style="display:flex; gap:8px;">
+    ventana.document.close();
+}
 
-                <button class="btn-sello" onclick="agregarSello(${i})">SELLO (${v.sellos})</button>
+// --- COBROS ADICIONALES Y SERVICIOS ---
+function cobrarBaño() {
+    const cobro = {
+        id: Date.now(),
+        concepto: "Servicio de Baño",
+        monto: 3,
+        fecha: new Date().toLocaleString('es-GT')
+    };
+    historialCobros.push(cobro);
+    guardarDatos();
+    renderizarHistorial();
+    alert("Cobro de baño registrado: Q3.00");
+}
 
-                <button class="btn-salida-list" onclick="darSalida(${i})">SALIDA</button>
+function abrirModalMensual() {
+    document.getElementById('modalMensual').style.display = 'flex';
+}
 
-            </div>`;
+function cerrarModalMensual() {
+    document.getElementById('modalMensual').style.display = 'none';
+    document.getElementById('mNombre').value = '';
+    document.getElementById('mCosto').value = '';
+}
 
-        cont.appendChild(div);
+function guardarMensualidad() {
+    const nombre = document.getElementById('mNombre').value.trim();
+    const monto = parseFloat(document.getElementById('mCosto').value);
 
+    if (!nombre || isNaN(monto) || monto <= 0) {
+        alert("Por favor complete los campos correctamente.");
+        return;
+    }
+
+    const cobro = {
+        id: Date.now(),
+        concepto: `Mensualidad: ${nombre}`,
+        monto: monto,
+        fecha: new Date().toLocaleString('es-GT')
+    };
+
+    historialCobros.push(cobro);
+    guardarDatos();
+    renderizarHistorial();
+    cerrarModalMensual();
+    alert(`Pago de mensualidad registrado: Q${monto.toFixed(2)}`);
+}
+
+// --- RENDERIZADO Y UTILIDADES ---
+function renderizarActivos() {
+    const container = document.getElementById('activeList');
+    if (!container) return;
+
+    if (vehiculosActivos.length === 0) {
+        container.innerHTML = `<p style="color:#8e8e93; text-align:center;">No hay vehículos registrados en el parqueo.</p>`;
+        return;
+    }
+
+    let html = '<ul style="list-style:none; padding:0; margin:0;">';
+    vehiculosActivos.forEach(v => {
+        html += `
+            <li style="display:flex; justify-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px; margin-bottom:8px; border-radius:8px;">
+                <div>
+                    <strong style="font-size:18px; color:#ffffff;">${v.placa}</strong><br>
+                    <small style="color:#8e8e93;">Ingreso: ${v.horaEntradaFormato}</small>
+                </div>
+                <button onclick="salidaVehiculo(${v.id})" class="ios-btn-danger" style="padding:6px 12px; font-size:12px;">Salida</button>
+            </li>
+        `;
     });
-
+    html += '</ul>';
+    container.innerHTML = html;
 }
 
+function salidaVehiculo(id) {
+    const vehiculo = vehiculosActivos.find(v => v.id === id);
+    if (!vehiculo) return;
 
-// HISTORIAL Y CIERRE DE TURNOS
-
-function toggleHistorial(){
-
-    let box = document.getElementById("historialBox");
-
-    if(box.style.display === "none") {
-
-        box.style.display = "block";
-
-        let html = historial.slice().reverse().map(h => `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;"><b>${h.placa}</b> - Q${h.precio} (${h.tipo})</div>`).join('');
-
-        if(usuarioActivo.rol === "ADMIN") {
-
-            html += `<button class="ios-btn-danger" onclick="borrarHistorialTotal()">BORRAR TODO (ADMIN)</button>`;
-
-        } else {
-
-            html += `<button class="ios-btn-danger" style="background:#ff9500;" onclick="cerrarTurnoOperador()">CERRAR TURNO (BORRAR MI HISTORIAL)</button>`;
-
-        }
-
-        box.innerHTML = html || "Sin movimientos en este turno";
-
-    } else box.style.display = "none";
-
+    if (confirm(`¿Procesar salida del vehículo con placa ${vehiculo.placa}?`)) {
+        vehiculosActivos = vehiculosActivos.filter(v => v.id !== id);
+        guardarDatos();
+        renderizarActivos();
+    }
 }
 
+function toggleHistorial() {
+    const box = document.getElementById('historialBox');
+    if (box.style.display === 'none') {
+        box.style.display = 'block';
+    } else {
+        box.style.display = 'none';
+    }
+}
 
-function cerrarTurnoOperador(){
+function renderizarHistorial() {
+    const container = document.getElementById('historialBox');
+    if (!container) return;
 
-    if(confirm("¿Seguro que desea cerrar su turno? Esto limpiará su historial.")){
-
-        historial = [];
-
-        localStorage.setItem("historial", JSON.stringify(historial));
-
-        toggleHistorial();
-
-        alert("Turno cerrado.");
-
+    if (historialCobros.length === 0) {
+        container.innerHTML = `<p style="color:#8e8e93; text-align:center; padding:10px;">Sin historial de cobros registrado.</p>`;
+        return;
     }
 
+    let html = '<ul style="list-style:none; padding:0; margin:0;">';
+    historialCobros.slice().reverse().forEach(c => {
+        html += `
+            <li style="border-bottom:1px solid rgba(255,255,255,0.1); padding:8px 0; font-size:13px; color:#ddd;">
+                <strong>${c.concepto}</strong> - Q${c.monto.toFixed(2)}<br>
+                <small style="color:#8e8e93;">${c.fecha}</small>
+            </li>
+        `;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
 }
-
-
-function borrarHistorialTotal(){
-
-    if(confirm("¿BORRAR TODO EL HISTORIAL DEL SISTEMA?")){
-
-        historial = [];
-
-        localStorage.setItem("historial", JSON.stringify(historial));
-
-        toggleHistorial();
-
-    }
-
-}
-
-
-// --- IMPRESIÓN AJUSTADA (TEXTOS SEGUROS PARA EPSON TM-T20III) ---
-
-
-function imprimirTicketEntrada(v){
-
-    let w = window.open("","","width=300,height=900");
-
-    w.document.write(`
-
-        <html><head><style>
-
-            @page { margin: 0; }
-
-            body { 
-
-                font-family: 'Arial', sans-serif; 
-
-                width: 260px; 
-
-                margin: 0; 
-
-                padding: 30px 5px 220px 5px; 
-
-                text-align: center;
-
-                min-height: 600px; 
-
-            }
-
-            h1 { font-size: 52px; margin: 15px 0; font-weight: 900; letter-spacing: -1px; }
-
-            p { margin: 5px 0; }
-
-        </style></head>
-
-        <body onload="window.print();window.close()">
-
-            <img src="logotorre.png" width="130">
-
-            <p style="font-size: 18px; font-weight: bold;">TORRE GRANADOS</p>
-
-            <hr style="border: 1px solid #000;">
-
-            <h1>${v.placa}</h1>
-
-            <hr style="border: 1px solid #000;">
-
-            <p style="font-size: 16px;">
-
-                <b>ENTRADA:</b> ${new Date().toLocaleTimeString()}<br>
-
-                <b>FECHA:</b> ${new Date().toLocaleDateString()}
-
-            </p>
-
-            <p style="font-size: 14px; font-weight: bold; margin-top:10px;">30 MIN GRATIS POR SELLO</p>
-
-            <div style="margin-top: 180px; color: white;">.</div> 
-
-        </body></html>`);
-
-    w.document.close();
-
-}
-
-
-function imprimirTicketSalida(h){
-
-    let w = window.open("","","width=300,height=800");
-
-    let visualPrecio = h.precio > 0 ? `Q${h.precio}.00` : `Q0.00`;
-
-    w.document.write(`
-
-        <html><head><style>
-
-            @page { margin: 0; }
-
-            body { 
-
-                font-family: 'Arial', sans-serif; 
-
-                width: 260px; 
-
-                margin: 0; 
-
-                padding: 30px 5px 140px 5px; 
-
-                text-align: center;
-
-                min-height: 450px;
-
-            }
-
-            .precio-grande { font-size: 58px; font-weight: 900; margin: 15px 0; letter-spacing: -1px; }
-
-            p { margin: 5px 0; }
-
-        </style></head>
-
-        <body onload="window.print();window.close()">
-
-            <img src="logotorre.png" width="110">
-
-            <hr style="border: 1px solid #000;">
-
-            <p style="font-size: 24px; font-weight: bold;">PLACA: ${h.placa}</p>
-
-            <div class="precio-grande">${visualPrecio}</div>
-
-            <hr style="border: 1px solid #000;">
-
-            <p style="font-size: 15px;">
-
-                E: ${h.horaE} | S: ${h.horaS}<br>
-
-                FECHA: ${h.fecha}
-
-            </p>
-
-            <p style="font-size: 14px; font-weight: bold; margin-top: 10px;">¡GRACIAS POR SU VISITA!</p>
-
-            <div style="margin-top: 100px; color: white;">.</div>
-
-        </body></html>`);
-
-    w.document.close();
-
-}
-
-
-// GENERACIÓN DE REPORTE FINAL
 
 function generarReporteHTML() {
+    let total = historialCobros.reduce((acc, curr) => acc + curr.monto, 0);
+    alert(`REPORTE GENERAL DE CAJA\n------------------------\nTotal de Cobros Registrados: Q${total.toFixed(2)}`);
+}
 
-    let trabajador = prompt("Nombre del trabajador:");
-
-    if (!trabajador) return;
-
-    let vehiculos = historial.filter(x => x.tipo === "EFECTIVO" || x.tipo === "SELLO TOTAL");
-
-    let otros = historial.filter(x => x.tipo === "BAÑO" || x.tipo === "TICKET PERDIDO" || x.tipo === "MENSUAL");
-
-    let totalCaja = historial.reduce((s, x) => s + x.precio, 0);
-
-    let totalSoloVehiculos = vehiculos.reduce((s, x) => s + x.precio, 0);
-
-    let totalOtros = otros.reduce((s, x) => s + x.precio, 0);
-
-    let totalSellos = historial.reduce((s, x) => s + (x.valorSello || 0), 0);
-
-
-    let reportContainer = document.createElement("div");
-
-    reportContainer.style.position = "fixed"; reportContainer.style.left = "-9999px";
-
-    reportContainer.style.width = "595px"; reportContainer.style.background = "white"; reportContainer.style.padding = "40px";
-
-
-    reportContainer.innerHTML = `
-
-        <div style="border: 1px solid #000; padding: 30px; min-height: 800px; font-family: Arial;">
-
-            <center><img src="logotorre.png" width="180"><h1>REPORTE DE TURNO</h1></center>
-
-            <div style="display:flex; justify-content:space-between; margin-top:30px;">
-
-                <span><b>OPERADOR:</b> ${trabajador.toUpperCase()}</span>
-
-                <span><b>FECHA:</b> ${new Date().toLocaleDateString()}</span>
-
-            </div>
-
-            <hr>
-
-            <h3>DETALLE DE VEHÍCULOS</h3>
-
-            <table style="width:100%; font-size:12px; border-collapse:collapse;">
-
-                <tr style="border-bottom:2px solid #000; text-align:left;"><th>Placa</th><th>Tipo</th><th style="text-align:right;">Monto</th></tr>
-
-                ${vehiculos.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td>${x.tipo}</td><td style="text-align:right;">${x.precio > 0 ? 'Q'+x.precio+'.00' : 'Q0.00 (Q'+x.valorSello+')'}</td></tr>`).join('')}
-
-            </table>
-
-            ${otros.length > 0 ? `<h3 style="margin-top:20px;">OTROS SERVICIOS</h3><table style="width:100%; font-size:12px; border-collapse:collapse;">${otros.map(x => `<tr><td style="padding:5px; border-bottom:1px solid #ddd;">${x.placa}</td><td style="text-align:right;">Q${x.precio}.00</td></tr>`).join('')}</table>` : ''}
-
-            <div style="margin-top:40px; border:2px solid #000; padding:20px; background:#f9f9f9;">
-
-                <table style="width:100%; font-size:18px;">
-
-                    <tr><td>Total Vehículos:</td><td style="text-align:right;">Q${totalSoloVehiculos}.00</td></tr>
-
-                    <tr><td>Otros Servicios:</td><td style="text-align:right;">Q${totalOtros}.00</td></tr>
-
-                    <tr style="font-size:24px; font-weight:bold;"><td>TOTAL CAJA:</td><td style="text-align:right;">Q${totalCaja}.00</td></tr>
-
-                </table>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    document.body.appendChild(reportContainer);
-
-    html2canvas(reportContainer, {scale: 2}).then(canvas => {
-
-        let link = document.createElement("a");
-
-        link.download = `Reporte_${trabajador.toUpperCase()}.png`;
-
-        link.href = canvas.toDataURL();
-
-        link.click();
-
-        document.body.removeChild(reportContainer);
-
-    });
-
-} 
+function guardarDatos() {
+    localStorage.setItem('tg_vehiculosActivos', JSON.stringify(vehiculosActivos));
+    localStorage.setItem('tg_historialCobros', JSON.stringify(historialCobros));
+}
