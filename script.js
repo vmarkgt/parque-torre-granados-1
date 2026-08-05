@@ -120,27 +120,25 @@ function registrarEntrada(){
 
 // COBROS EXTRAS
 
-function cobrarTicketPerdido() {
+ function cobrarTicketPerdido() {
+
+
     let placa = prompt("Ingrese la PLACA del vehículo:");
+
+
     if(!placa) return;
 
-    let ticket = {
-        placa: "T. PERDIDO: " + placa.toUpperCase(), 
-        tipo: "TICKET PERDIDO", 
-        precio: 25, 
-        fecha: new Date().toLocaleDateString(), 
-        operador: usuarioActivo.user, 
-        valorSello: 0
-    };
 
-    historial.push(ticket);
+    historial.push({placa: "T. PERDIDO: " + placa.toUpperCase(), tipo: "TICKET PERDIDO", precio: 25, fecha: new Date().toLocaleDateString(), operador: usuarioActivo.user, valorSello: 0});
+
+
     localStorage.setItem("historial", JSON.stringify(historial));
+
 
     alert("Cobro registrado (Q25)");
 
-    // Llamada a la función de impresión
-    imprimirTicket(ticket); 
-}
+
+} 
 
 
 function cobrarBaño() {
