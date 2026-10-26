@@ -400,6 +400,7 @@ function imprimirTicketEntrada(v){
 
             </p>
 
+            <p style="font-size: 18px; font-weight: bold; margin-top:10px;">Q25 POR TICKET PERDIDO</p>
             <p style="font-size: 14px; font-weight: bold; margin-top:10px;">30 MIN GRATIS POR SELLO</p>
 
             <div style="margin-top: 180px; color: white;">.</div> 
